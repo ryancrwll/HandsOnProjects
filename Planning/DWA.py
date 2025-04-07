@@ -7,8 +7,9 @@ from matplotlib.lines import Line2D
 # Setup
 fig, ax = plt.subplots()
 ax.set_aspect('equal')
-ax.set_xlim(-100, 100)
-ax.set_ylim(-100, 100)
+map_bounds = 100
+ax.set_xlim(-map_bounds, map_bounds)
+ax.set_ylim(-map_bounds, map_bounds)
 possible_arcs, = ax.plot([], [], 'o-', color='red', lw=1, alpha=0.6) #all possible paths
 best_arc, = ax.plot([], [], 'o-', color='green', lw=2) # Line for displaying the chosen path
 line, = ax.plot([], [], color='blue', lw=1) # Line for displaying the path
@@ -22,8 +23,8 @@ path = [np.array(pose).copy()]
 accel_max = [2, 5] # Max of linear and angular accelerations
 vel_limits = [10, 5] # Max of linear and angular velocities
 time_window = 2.0 # How far ahead we simulate the dynamic window
-weights = np.array([1.0, 1.0, 0.3]) # Weights for tuning dyanmic window
-obstacles = [np.array([20.0, 23.0, 8.0]), np.array([38.0, -60.0, 16.0]),]  # (x, y, radius)
+weights = np.array([0.9, 0.8, 0.1, 1.0]) # Weights for tuning dyanmic window (heading, clearance, velocity, distance to goal)
+obstacles = [np.array([20.0, 23.0, 8.0]), np.array([38.0, -60.0, 16.0]), np.array([-78.0, -2.0, 12.0])]  # (x, y, radius)
 
 # Create robot
 radius = 0.5
@@ -41,15 +42,22 @@ def motion_model(pose, u, dt):
     pose[2] += u[1]*dt
     return pose
 
-def generate_DWA(vel):
+def generate_DWA(vel, current_pose):
     staticConstraints = [0.0, vel_limits[0], -vel_limits[1], vel_limits[1]]
+    stopping_dist = np.linalg.norm(goal - current_pose[:2])
+    stop_assurance = map_bounds/50
+    if stopping_dist > stop_assurance:
+        stopping_dist -= stop_assurance
+    # from physics equation vf^2 - vi^2 = 2 * a *d
+    max_vel = np.sqrt(2 * accel_max[0] * stopping_dist)
+    max_vel = min(max_vel, vel_limits[0])
     dynamicConstraints = [vel[0] - accel_max[0]*dt,
                           vel[0] + accel_max[0]*dt,
                           vel[1] - accel_max[1]*dt,
                           vel[1] + accel_max[1]*dt]
     # bounds for possible velocities
     dwa = np.array([max(staticConstraints[0], dynamicConstraints[0]),
-                    min(staticConstraints[1], dynamicConstraints[1]),
+                    min(max_vel, dynamicConstraints[1]),
                     max(staticConstraints[2], dynamicConstraints[2]),
                     min(staticConstraints[3], dynamicConstraints[3])])
     return dwa
@@ -66,23 +74,22 @@ def predict_course(pose, u):
 def calc_scoring_vals(path):
     end_pose = path[-1, :]
     angle_needed = np.arctan2(goal[1] - end_pose[1], goal[0] - end_pose[0])
-
-    #returns positive values of difference of angles reguardless if it wraps around 360 or not
-    # then makes it negative such that larger valuses are more desired, better for finding larger score
-    heading_diff = - abs(np.arctan2(np.sin(angle_needed - end_pose[2]), np.cos(angle_needed - end_pose[2])))
+    dist2goal = np.linalg.norm(goal - end_pose[:2])
+    # returns positive values of difference of angles reguardless if it wraps around 360 or not
+    heading_diff = abs(np.arctan2(np.sin(angle_needed - end_pose[2]), np.cos(angle_needed - end_pose[2])))
 
     closest = np.inf
     for i in range(len(obstacles)):
         for j in range(len(path)):
-            dist_to_obsticle_ctr = np.linalg.norm([obstacles[i][0] - path[j][0], obstacles[i][1] - path[j][1]]) - obstacles[i][2]
+            dist_to_obsticle_ctr = np.linalg.norm([obstacles[i][0] - path[j][0], obstacles[i][1] - path[j][1]]) - obstacles[i][2] - radius
             if dist_to_obsticle_ctr < closest:
                 closest = dist_to_obsticle_ctr
     
-    return heading_diff, closest
+    return heading_diff, closest, dist2goal
 
 def create_DWA_arcs(current_pose, current_vel, num_vel):
-    "creates all possible trajectories within a ceratin velocity limits and at a number of intervals of num_vel"
-    dw = generate_DWA(current_vel)
+    "creates all possible trajectories within a ceratin velocity limits and at a number of intervals of num_vel and selects the one with best score"
+    dw = generate_DWA(current_vel, current_pose)
     dyn_windowL = np.linspace(dw[0], dw[1], num_vel)
     dyn_windowA = np.linspace(dw[2], dw[3], num_vel)
     arcs = []
@@ -91,14 +98,16 @@ def create_DWA_arcs(current_pose, current_vel, num_vel):
         for j in range(len(dyn_windowA)):
             arc = predict_course(current_pose, np.array([dyn_windowL[i], dyn_windowA[j]]))
             arcs.append(arc) #for plotting
-            h_score, c_score = calc_scoring_vals(arc)
+            h_score, c_score, d_score = calc_scoring_vals(arc)
             # norm values to be range (-1,1)
             h_score /= np.pi 
             # use log to minimize importance of clearances that are very far away
             c_score = np.log(c_score+0.001) # avoids log zero
             # velocity score uses initial velocity and not final bc assuming constant velocity over the window bc it is our control input
-            v_score = dyn_windowL[i]
-            score = np.array([h_score,c_score,v_score]) @ weights
+            # normalize it so that 1 is highest possible value
+            v_score = dyn_windowL[i]/vel_limits[0]
+            # makes values negative where smaller is better such that larger valuses are more desired, better for finding larger score
+            score = np.array([-h_score,c_score,v_score,-d_score]) @ weights
             if score > best_score:
                 best_score = score
                 best_u = np.array([dyn_windowL[i], dyn_windowA[j]])
@@ -107,7 +116,8 @@ def create_DWA_arcs(current_pose, current_vel, num_vel):
 
 def init():
     global goal
-    goal = np.array([np.random.uniform(-90,90), np.random.uniform(-90,90)])
+    randrange = map_bounds-(map_bounds/10)
+    goal = np.array([np.random.uniform(-randrange,randrange), np.random.uniform(-randrange,randrange)])
     possible_arcs.set_data([], [])
     best_arc.set_data([], [])
     line.set_data([], [])
@@ -117,7 +127,7 @@ def init():
 
 # Animation function
 def simulation(t):
-    global path, time, current_vel, pose
+    global path, time, current_vel, pose, dist2goal
 
     time.append(dt * len(time))
     
@@ -131,14 +141,14 @@ def simulation(t):
     np_path = np.array(path)
     line.set_data(np_path[:,0], np_path[:,1])
 
-#if time[-1] % 1.5 == 0:
+
     np_path_pred = np.array(path_pred)
     best_arc.set_data(np_path_pred[:,0], np_path_pred[:,1])
 
-    #combining arcs for plotting
+    # combining arcs for plotting
     arcs_x = []
     arcs_y = []
-    #np.nan used for discontinuous lines so that all arcs can be plotted at once
+    # np.nan used for discontinuous lines so that all arcs can be plotted at once
     for arc in arcs:
         np_arc = np.array(arc)
         arcs_x.extend(np_arc[:, 0])
@@ -151,10 +161,7 @@ def simulation(t):
     return robot, best_arc, possible_arcs, line, point
 
 # Simulate
-animation = FuncAnimation(fig, simulation, np.arange(0, 60, dt), init_func=init, interval=60, blit=True, repeat=True)
-print(f"Number of lines on plot: {len(ax.lines)}")
-for i, l in enumerate(ax.lines):
-    print(f"Line {i}: {l.get_color()}, {l.get_linestyle()}, {l.get_xydata()[:2]}...")
+animation = FuncAnimation(fig, simulation, np.arange(0, 20, dt), init_func=init, interval=10, blit=True, repeat=True)
 plt.show()
 
 
