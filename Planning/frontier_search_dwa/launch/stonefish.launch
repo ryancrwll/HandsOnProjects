@@ -1,0 +1,15 @@
+<launch>
+    <include file="$(find turtlebot_simulation)/launch/kobuki_motion_planning.launch"/>
+    <node pkg="frontier_search_dwa" type="laser_scan_to_point_cloud_node.py" name="laserscan_to_pointcloud" output="screen">
+        <remap from="/kobuki/sensors/rplidar" to="/turtlebot/kobuki/sensors/rplidar"/>
+    </node>
+
+    <param name="~frame_id" type="string" value="world_ned"/>
+    <param name="~base_frame_id" type="string" value="turtlebot/base_link"/>
+    <node pkg="octomap_server" type="octomap_server_node" name="octomap" output="screen"/>
+    <!-- <node name="rqt_gui" pkg="rqt_gui" type="rqt_gui"-->
+    <!--    args=" AQUI SE NECESITAN DOS GUIONES--> <!--perspective-file $(find frontier_search_dwa)/config/kobuki_cmd.perspective">-->
+    <!--    <remap from="robot_description" to="/turtlebot/robot_description"/> -->
+    
+    <!-- </node> -->
+</launch>

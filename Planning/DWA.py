@@ -13,7 +13,7 @@ ax.set_ylim(-map_bounds, map_bounds)
 possible_arcs, = ax.plot([], [], 'o-', color='red', lw=1, alpha=0.6) #all possible paths
 best_arc, = ax.plot([], [], 'o-', color='green', lw=2) # Line for displaying the chosen path
 line, = ax.plot([], [], color='blue', lw=1) # Line for displaying the path
-point, = ax.plot([], [], 'x') # Goal
+point, = ax.plot([], [], 'x') # Goal 
 
 goal = np.array([75,75])
 pose, current_vel = [0,0,0], [0,0]
@@ -21,10 +21,10 @@ dt = 0.1
 time = []
 path = [np.array(pose).copy()]
 accel_max = [2, 5] # Max of linear and angular accelerations
-vel_limits = [10, 5] # Max of linear and angular velocities
+vel_limits = [10,20] # Max of linear and angular velocities
 time_window = 2.0 # How far ahead we simulate the dynamic window
-weights = np.array([0.9, 0.8, 0.1, 1.0]) # Weights for tuning dyanmic window (heading, clearance, velocity, distance to goal)
-obstacles = [np.array([20.0, 23.0, 8.0]), np.array([38.0, -60.0, 16.0]), np.array([-78.0, -2.0, 12.0])]  # (x, y, radius)
+weights = np.array([0.4, 0.8, 1.0, 1.3]) # Weights for tuning dyanmic window (heading, clearance, velocity, distance to goal)
+obstacles = [np.array([20.0, 23.0, 8.0]), np.array([38.0, -60.0, 16.0]), np.array([-78.0, -2.0, 12.0]), np.array([-25.0, -25.0, 20.0])]  # (x, y, radius)
 
 # Create robot
 radius = 0.5
@@ -99,13 +99,13 @@ def create_DWA_arcs(current_pose, current_vel, num_vel):
             arc = predict_course(current_pose, np.array([dyn_windowL[i], dyn_windowA[j]]))
             arcs.append(arc) #for plotting
             h_score, c_score, d_score = calc_scoring_vals(arc)
-            # norm values to be range (-1,1)
+            # norm values to be range (0,1)
             h_score /= np.pi 
             # use log to minimize importance of clearances that are very far away
             c_score = np.log(c_score+0.001) # avoids log zero
             # velocity score uses initial velocity and not final bc assuming constant velocity over the window bc it is our control input
             # normalize it so that 1 is highest possible value
-            v_score = dyn_windowL[i]/vel_limits[0]
+            v_score = 0.7*(dyn_windowL[i]/vel_limits[0]) + 0.3*(dyn_windowA[i]/vel_limits[1])
             # makes values negative where smaller is better such that larger valuses are more desired, better for finding larger score
             score = np.array([-h_score,c_score,v_score,-d_score]) @ weights
             if score > best_score:
