@@ -1,19 +1,12 @@
 #!/usr/bin/python3
-
-import array
-from ast import Return
 from turtle import distance
 import numpy as np
-import math as m
 import rospy
 import tf
-import functions as f
 import matplotlib.pyplot as plt
 import random
 
-
 from frontier_expl import frontier
-from DWA import DWA 
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker
@@ -23,13 +16,14 @@ from nav_msgs.msg import OccupancyGrid
 from geometry_msgs.msg import PoseStamped
 from std_srvs.srv import Trigger, TriggerResponse
 from move_base_msgs.msg import MoveBaseActionResult
+from frontier_search_dwa.msg import dwa
 
 from online_planning import StateValidityChecker, Node, move_to_point, compute_path_global, dist_between_points
 
 class OnlinePlanner:
 
     # OnlinePlanner Constructor
-    def __init__(self, gridmap_topic, odom_topic, cmd_vel_topic, dominion, distance_threshold):
+    def __init__(self, gridmap_topic, odom_topic, dominion, distance_threshold):
 
         # ATTRIBUTES 
         # List of points which define the plan. None if there is no plan
@@ -48,54 +42,42 @@ class OnlinePlanner:
         # Flags to prevent errors
         self.map_loaded = False   
         self.planning = False  
+        self.replan = False
 
         # FRONTIER SEARCH WEIGHTS      
-        self.vpDist_w = 0.3     
-        self.fSize_w = 0.9            
+        self.vpDist_w = 0.8     
+        self.fSize_w = 0.4           
 
-        # CONTROLLER PARAMETERS
-        # Proportional linear velocity controller gain
-        self.Kv = 0.5
-        # Proportional angular velocity controller gain                   
-        self.Kw = 0.5
-        # Maximum linear velocity control action                   
-        self.v_max = 0.5
-        # Maximum angular velocity control action               
-        self.w_max = 1.0  
-        # linear and angular accel limits
-        self.accel_limits  = [0.5, 0.5]    
-        # Current Velocity
-        self.best_u = [0.0, 0.0]       
-
-        # PUBLISHERS
-        # Publisher for sending velocity commands to the robot
-        self.cmd_pub =  rospy.Publisher(cmd_vel_topic, Twist, queue_size=1)# TODO: publisher to cmd_vel_topic
         # Publisher for visualizing the path to with rviz
         self.marker_pub = rospy.Publisher('/path_marker', Marker, queue_size=1)
         # Publisher for visualizing frontiers and viewpoints
         self.frontier_pub = rospy.Publisher('/frontier_markers', Marker, queue_size=1)
-        self.dwa_pub = rospy.Publisher('/dwa_arcs', Marker, queue_size=1)
+        # Publisher for sending path to DWA controller
+        self.path_pub = rospy.Publisher('/path_for_dwa', dwa, queue_size = 1)
         
         # SUBSCRIBERS
-        self.gridmap_sub = rospy.Subscriber("/projected_map", OccupancyGrid, self.get_gridmap) #subscriber to gridmap_topic from Octomap Server  
-        self.odom_sub = rospy.Subscriber("/turtlebot/odom_ground_truth", Odometry, self.get_odom) #subscriber to odom_topic  
+        self.gridmap_sub = rospy.Subscriber(gridmap_topic, OccupancyGrid, self.get_gridmap) #subscriber to gridmap_topic from Octomap Server  
+        self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.get_odom, queue_size=5) #subscriber to odom_topic  
         self.gotolocation = rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.get_selected_goal) #subscriber to /move_base_simple/goal published by rviz
         self.testing = rospy.Service('/explore', Trigger, self.debug_explore)
         self.exploring = rospy.Timer(rospy.Duration(1.0), self.explore, oneshot=True)
-
-        
-        # TIMERS
-        # Timer for velocity controller
-        rospy.Timer(rospy.Duration(0.1), self.controller)
+        self.replan_sub = rospy.Subscriber('/replan', dwa, self.replan_cb)
     
+    # Receives boolean to check if replan is needed
+    def replan_cb(self, msg):
+        if msg.replan_bool:
+            self.replan = True
+        else: self.replan = False
+
     # Odometry callback: Gets current robot pose and stores it into self.current_pose
     def get_odom(self, odom):
-        _, _, yaw = tf.transformations.euler_from_quaternion([odom.pose.pose.orientation.x, 
-                                                              odom.pose.pose.orientation.y,
-                                                              odom.pose.pose.orientation.z,
-                                                              odom.pose.pose.orientation.w])
-        # Store current position (x, y, yaw) as a np.array in self.current_pose var.
-        self.current_pose = np.array([odom.pose.pose.position.x, odom.pose.pose.position.y, yaw])
+            _, _, yaw = tf.transformations.euler_from_quaternion([odom.pose.pose.orientation.x, 
+                                                                odom.pose.pose.orientation.y,
+                                                                odom.pose.pose.orientation.z,
+                                                                odom.pose.pose.orientation.w])
+            # Store current position (x, y, yaw) as a np.array in self.current_pose var.
+            self.current_pose = np.array([odom.pose.pose.position.x, odom.pose.pose.position.y, yaw])
+            self.last_odom_time = rospy.Time.now().to_sec()
 
     # Map callback: Gets the latest occupancy map published by Octomap server and update 
     # the state validity checker
@@ -108,7 +90,6 @@ class OnlinePlanner:
             # self.svc.map_viz_debug(env, 'env')
             origin = [gridmap.info.origin.position.x, gridmap.info.origin.position.y]
             self.svc.set(env, gridmap.info.resolution, origin)
-            cell_pos = self.svc.position_to_map(self.current_pose[:2])
             # self.svc.map_viz_debug(self.svc.map, 'svc', cell_pos)
             self.map_loaded = True
             if len(self.path) > 0:
@@ -119,10 +100,7 @@ class OnlinePlanner:
             # If the robot is following a path, check if it is still valid
             if len(self.path) > 0:
                 # create total_path adding the current position to the rest of waypoints in the path
-                total_path = [self.current_pose[0:2]] + self.path
-                # TODO: check total_path validity. If total_path is not valid replan
-                
-    
+                total_path = [self.current_pose[0:2]] + self.path    
 
     # Goal callback: Get new goal from /move_base_simple/goal topic published by rviz 
     # and computes a plan to it using self.plan() method
@@ -204,7 +182,7 @@ class OnlinePlanner:
     
     def explore(self, event):
         while not self.map_loaded and not rospy.is_shutdown():
-            rospy.loginfo("Waiting for map to become ready...")
+            rospy.loginfo("[planner] Waiting for map to become ready...")
             rospy.sleep(0.5) 
         self.get_viewpoint()
         self.plan()
@@ -253,74 +231,40 @@ class OnlinePlanner:
 
         if len(self.path) == 0:
             print("Path not found!")
-            self.__send_commnd__(0,0)
             self.get_viewpoint()
         else:
             print("Path found")
             # Publish plan marker to visualize in rviz
-            self.publish_path()
+            self.publish_path_rviz()
+            self.publish_path_dwa()
             # remove initial waypoint in the path (current pose is already reached)
             #del self.path[0]                 
+            #    
         
-
-    # This method is called every 0.1s. It computes the velocity comands in order to reach the 
-    # next waypoint in the path. It also sends zero velocity commands if there is no active path.
-    def controller(self, event):
-        # v = 0
-        # w = 0
-
-        if self.planning:
-            rospy.loginfo("Planning...")
-            self.__send_commnd__(0, 0)
-            return
-        
-        if len(self.path) > 0: 
-            if dist_between_points(self.current_pose[0:2], self.path[0]) <= 0.2:# If current waypoint is reached with some tolerance move to the next waypoint. 
-                del self.path[0]
-                # If it was the last waypoint in the path show a message indicating it
-                if len(self.path) == 0:
-                    print("Goal reached!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                    self.get_viewpoint()
-                    self.plan()
-            
-            else: #TODO right now has no map to begin with, need to fix!!!!!!
-                print(f'planner waypoint {self.path[0]}')
-                print(f'Current position from planner {self.current_pose[:3]}')
-                dwa = DWA(self.current_pose[:3], self.path[0], self.svc, self.goal, 
-                          [self.v_max, self.w_max], self.accel_limits, self.svc.distance, 
-                          np.array([0.4, 0.8, 1.0, 1.3]), '/odom')
-                # Updating current pose and velocities
-                self.best_u, best_course, arcs = dwa.create_DWA_arcs(self.best_u)
-                # RVIZ plots for trajectories
-                self.publish_dwa_arcs(best_course, arcs)
-                
-                # v,w = move_to_point(self.current_pose[0:2], self.current_pose[3],self.path[0], self.Kv, self.Kw)
-        else: 
-            rospy.loginfo("No path stopping movement")
-            self.__send_commnd__(0,0)
-            return
-          
-        
-        # Publish velocity commands
-        #print("v: ", v, "w: ", w)
-        self.__send_commnd__(self.best_u[0], self.best_u[1])
-    
+        if self.replan:
+            self.get_viewpoint()
+            self.replan = False 
 
     # PUBLISHER HELPERS
-    # Transform linear and angular velocity (v, w) into a Twist message and publish it
-    def __send_commnd__(self, v, w):
-        cmd = Twist()
-        cmd.linear.x = np.clip(v, -self.v_max, self.v_max)
-        cmd.linear.y = 0
-        cmd.linear.z = 0
-        cmd.angular.x = 0
-        cmd.angular.y = 0
-        cmd.angular.z = np.clip(w, -self.w_max, self.w_max)
-        self.cmd_pub.publish(cmd)
 
+    # Publish a path for dwa
+    def publish_path_dwa(self):
+        path_msg = dwa()
+        path_msg.replan_bool = False
+        
+        if len(self.path) > 0 and self.path is not None:
+            for point in self.path:
+                pose = PoseStamped()
+                pose.header.frame_id = "world_ned"
+                pose.header.stamp = rospy.Time.now()
+                pose.pose.position.x = point[0]
+                pose.pose.position.y = point[1]
+                path_msg.poses.append(pose)
+
+        self.path_pub.publish(path_msg)
 
     # Publish a path as a series of line markers
-    def publish_path(self):
+    def publish_path_rviz(self):
         self.path.insert(0, self.current_pose[0:2])
         if len(self.path) > 1:
             m = Marker()
@@ -440,59 +384,11 @@ class OnlinePlanner:
                 m.colors.append(color_blue)
         self.frontier_pub.publish(m)
 
-    def publish_dwa_arcs(self, best, possible_arcs):
-        # DEBUG 
-        rospy.loginfo(f"Publishing {len(possible_arcs)} arcs")
-        rospy.loginfo(f"Best arc points: {best[:3] if best is not None else 'None'}")
-        delete_marker = Marker()
-        delete_marker.header.frame_id = 'world_ned'
-        delete_marker.header.stamp = rospy.Time.now()
-        delete_marker.ns = 'dwa'
-        delete_marker.id = 3
-        delete_marker.action = Marker.DELETE
-        self.dwa_pub.publish(delete_marker)
-
-        m = Marker()
-        m.header.frame_id = 'world_ned'
-        m.header.stamp = rospy.Time.now()
-        m.id = 3
-        m.type = Marker.CUBE_LIST
-        m.ns = 'dwa'
-        m.action = Marker.ADD
-        m.scale.x = self.svc.resolution
-        m.scale.y = self.svc.resolution
-        m.scale.z = 0.03
-        m.pose.orientation.w = 1.0
-        color_orange=ColorRGBA(1,0.647,0,1)
-        color_yellow=ColorRGBA(1,1,0,1)
-        used = []
-        if best is not None:
-            for point in best:
-                pos = point[:2]
-                used.append(tuple(pos))
-                p = Point()
-                p.x = pos[0]
-                p.y = pos[1]
-                p.z = -0.35
-                m.points.append(p)
-                m.colors.append(color_orange)
-        for arc in possible_arcs:
-            for point in arc:
-                pos = point[:2]
-                if pos is not None and tuple(pos) not in used:
-                    p = Point()
-                    p.x = pos[0]
-                    p.y = pos[1]
-                    p.z = -0.3
-                    m.points.append(p)
-                    m.colors.append(color_yellow)
-        self.dwa_pub.publish(m)
-
 # MAIN FUNCTION
 if __name__ == '__main__':
-    rospy.init_node('turtlebot_online_path_planning_node')   
+    rospy.init_node('frontier_dwa_node')   
 
-    node = OnlinePlanner('/projected_map', '/odom', '/turtlebot/kobuki/commands/velocity', np.array([-10.0, 10.0, -10.0, 10.0]), 0.2)
+    node = OnlinePlanner('/projected_map', "/turtlebot/odom_ground_truth", np.array([-10.0, 10.0, -10.0, 10.0]), 0.2)
     
     # Run forever
     rospy.spin()
