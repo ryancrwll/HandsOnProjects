@@ -46,7 +46,7 @@ class OnlinePlanner:
 
         # FRONTIER SEARCH WEIGHTS      
         self.vpDist_w = 0.8     
-        self.fSize_w = 0.4           
+        self.fSize_w = 0.0           
 
         # Publisher for visualizing the path to with rviz
         self.marker_pub = rospy.Publisher('/path_marker', Marker, queue_size=1)
@@ -62,6 +62,9 @@ class OnlinePlanner:
         self.testing = rospy.Service('/explore', Trigger, self.debug_explore)
         self.exploring = rospy.Timer(rospy.Duration(1.0), self.explore, oneshot=True)
         self.replan_sub = rospy.Subscriber('/replan', dwa, self.replan_cb)
+
+        # Should be same in both nodes
+        print(f"SVC params - res: {self.svc.resolution}, origin: {self.svc.origin}")
     
     # Receives boolean to check if replan is needed
     def replan_cb(self, msg):
@@ -97,11 +100,6 @@ class OnlinePlanner:
                 if not path_good:
                     self.plan()
 
-            # If the robot is following a path, check if it is still valid
-            if len(self.path) > 0:
-                # create total_path adding the current position to the rest of waypoints in the path
-                total_path = [self.current_pose[0:2]] + self.path    
-
     # Goal callback: Get new goal from /move_base_simple/goal topic published by rviz 
     # and computes a plan to it using self.plan() method
     def get_selected_goal(self, goal):
@@ -112,8 +110,8 @@ class OnlinePlanner:
                                                                 goal.pose.orientation.w])
         print('going to a selected point')
         # Store current position (x, y, yaw) as a np.array in self.current_pose var.
-        self.goal = np.array([goal.pose.position.x, goal.pose.position.y, goal.pose.position.z, yaw])
-        print("the goal has been set to: ", self.goal)
+        self.goal = np.array([goal.pose.position.x, goal.pose.position.y])
+        print("[planner] the goal has been set to: ", self.goal)
         self.plan()
 
     def closest_valid_point(self, cell_pos, desired_location, check_dist):
@@ -174,16 +172,14 @@ class OnlinePlanner:
     def debug_explore(self, event):
         rospy.loginfo("Received explore request")
         while not self.map_loaded and not rospy.is_shutdown():
-            rospy.loginfo("Waiting for map to become ready...")
-            rospy.sleep(0.5)   
+            rospy.loginfo_throttle(1.0, "Waiting for map to become ready...")
         self.get_viewpoint()
         self.plan()
         return TriggerResponse(success=True, message="Exploring...")
     
     def explore(self, event):
         while not self.map_loaded and not rospy.is_shutdown():
-            rospy.loginfo("[planner] Waiting for map to become ready...")
-            rospy.sleep(0.5) 
+            rospy.loginfo_throttle(1.0,"[planner] Waiting for map to become ready...")
         self.get_viewpoint()
         self.plan()
 

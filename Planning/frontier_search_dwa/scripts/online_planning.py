@@ -99,24 +99,22 @@ class StateValidityChecker:
 
         # this function variates from the requiered, since it asumes that the reference from the grid map is in the top left corner 
         x,y = point-origin #x,y are already in map (occupancy grid) coordinates
-        xmap, ymap = shape[1] - int(x/resolution), shape[0] - int(y/resolution)
-        if x < 0 or y < 0 or x > shape[1] or y > shape[0]: 
-            print ("error while converting to gridmap")
-            return None
-        else: 
+        xmap, ymap = int(np.floor(shape[1] - (x/resolution))), int(np.floor(shape[0] - (y/resolution)))
+        if (0 <= x <= shape[1]) and (0 <= y <= shape[0]):
             return np.array([xmap,ymap])
+        return None
 
     def map_to_position(self, m):
         origin = self.origin
         resolution = self.resolution
         shape = self.map.shape
-        if m[0] < 0 or m[1] < 0 or m[0] >= shape[1] or m[1] >= shape[0]: 
-            print("error while converting to position")
-            return None
+        if (0 <= m[0] <= shape[1]) and (0 <= m[1] <= shape[0]):
+            x,y = (shape[1]-m[0])*resolution, (shape[0]-m[1])*resolution 
+            x,y = x + origin[0],y+ origin[1]
+            return np.array((x,y))
+        return None
         
-        x,y = (shape[1]-m[0])*resolution, (shape[0]-m[1])*resolution 
-        x,y = x + origin[0],y+ origin[1]
-        return np.array((x,y))
+        
     
 
     def rotate_and_flip(self, matrix):

@@ -13,7 +13,7 @@ from online_planning import StateValidityChecker, dist_between_points
 
 def wrap_angle(angle):
     '''returns positive values of difference of angles reguardless if it wraps around 360 or not'''
-    return (angle + np.pi) % (2*np.pi) - np.pi
+    return abs((angle + np.pi) % (2*np.pi) - np.pi)
 
 class DWA:
     def __init__(self, radius, gridmap_topic, odom_topic, cmd_vel_topic, path_topic, replan_topic):
@@ -23,13 +23,12 @@ class DWA:
         self.good_pose = False # bool to tell if pose is recent enough to use
         self.path = []
         self.waypoint = None
-        self.svc = StateValidityChecker(radius)
-        self.map = None # map values to know obstacles to avoid 
+        self.svc = StateValidityChecker(radius) 
         self.map_loaded = False # makes sure a map is ready
         # Last time a map was received (to avoid map update too often)                                                
         self.last_map_time = rospy.Time.now()
         self.obstacles = [] # first two args are center coords and third is radius
-        if self.map is not None:
+        if self.svc.map is not None:
             self.create_obstacles() 
         self.goal = None # need goal to know stopping distance (x,y,theta)
         
@@ -41,12 +40,12 @@ class DWA:
         # Current Velocity
         self.current_velocity = [0.0, 0.0]  
         # DWA weights for tuning dyanmic window (heading, clearance, velocity, distance to goal) 
-        self.weights = np.array([0.4, 0.6, 0.6, 1.3]) # weights for tuning dyanmic window (heading, clearance, velocity, distance to goal)
+        self.weights = np.array([0.7, 0.8, 1.0, 1.3]) # np.array([0.4, 0.8, 1.0, 1.3]) weights for tuning dyanmic window (heading, clearance, velocity, distance to goal)
         # First velocity always opposite #TODO figure out!
         self.control_iteration = 0
         # Last time control function was called to know how ofen its gets called 
         self.last_control_time = None
-        self.sim_time = 5.0 # how far ahead to project velocities (seconds)
+        self.sim_time = 1.0 # how far ahead to project velocities (seconds)
         self.dt = 0.1 # time step for simulating trajectories (seconds)
         self.radius = self.svc.distance # radius of robot (meters)
         self.num_vel = 5 # sqrt of number of simulated trajectories to create
@@ -66,6 +65,9 @@ class DWA:
         # TIMERS
         # Timer for velocity controller
         rospy.Timer(rospy.Duration(0.05), self.controller)
+
+        # Should be same in both nodes
+        print(f"SVC params - res: {self.svc.resolution}, origin: {self.svc.origin}")
     
     # Odometry callback: Gets current robot pose and stores it into self.current_pose
     def get_odom(self, odom):
@@ -90,7 +92,6 @@ class DWA:
             # self.svc.map_viz_debug(env, 'env')
             origin = [gridmap.info.origin.position.x, gridmap.info.origin.position.y]
             self.svc.set(env, gridmap.info.resolution, origin)
-            self.map = self.svc.map.T
             # self.svc.map_viz_debug(self.svc.map, 'svc', cell_pos)
             self.map_loaded = True
             self.create_obstacles()
@@ -108,30 +109,24 @@ class DWA:
                                                                 goal.pose.orientation.y,
                                                                 goal.pose.orientation.z,
                                                                 goal.pose.orientation.w])
-        print('going to a selected point')
         # Store current position (x, y, yaw) as a np.array in self.current_pose var.
-        self.goal = np.array([goal.pose.position.x, goal.pose.position.y, goal.pose.position.z, yaw])
+        self.goal = np.array([goal.pose.position.x, goal.pose.position.y])
         self.path = np.array([self.goal[:2]])
-        print("the goal has been set to: ", self.goal)
     
     def create_obstacles(self):
-        if self.map is None:
+        if self.svc.map is None:
             return
         clearance = np.hypot(self.svc.resolution,self.svc.resolution)
         self.obstacles = []
-        # for i in range(self.map.shape[0]):
-        #     for j in range(self.map.shape[1]):
-        #         if self.map[i,j] == 1:
-        #             loc = self.svc.map_to_position(np.array([i,j]))
-        #             self.obstacles.append([np.array([loc[0], loc[1], clearance])])
+
         try:
-            obstacle_indices = np.argwhere(self.map == 1)
+            obstacle_indices = np.argwhere(self.svc.map == 1)
             for i,j in obstacle_indices:
                 loc = self.svc.map_to_position(np.array([i,j]))
                 if loc is not None:
-                    self.obstacles.append([loc[1],loc[0],clearance]) #TODO maybe switch loc[0] and loc[1] or j and i above
+                    self.obstacles.append([loc[0],loc[1],clearance]) #TODO maybe switch loc[0] and loc[1] or j and i above
         except Exception as e:
-            rospy.logerr(f"Obstacle creation failed: {str(e)}")
+            rospy.logerr(f"Obstacle creation failed: {str(e)}\n{traceback.format_exc()}")
             self.obstacles = []
 
     def motion_model(self, pose, u, dt=None):#TODO maybe switching x and y poses helps
@@ -159,7 +154,7 @@ class DWA:
     def generate_DWA(self, vel):
         staticConstraints = [0.0, self.v_lim[0], -self.v_lim[1], self.v_lim[1]]
         stopping_dist = np.linalg.norm(self.goal[:2] - self.current_pose[:2])
-        stop_assurance = self.map.shape[0]*self.svc.resolution/50
+        stop_assurance = self.svc.map.shape[0]*self.svc.resolution/50
         if stopping_dist > stop_assurance:
             stopping_dist -= stop_assurance
         # from physics equation vf^2 - vi^2 = 2 * a *d
@@ -197,7 +192,6 @@ class DWA:
         vector = self.waypoint - end_pose[:2]
         dist2goal = np.linalg.norm(vector)
         angle_needed = np.arctan2(vector[1], vector[0])
-
         heading_diff = wrap_angle(angle_needed - end_pose[2]) 
 
         if dist2goal < 0.25:
@@ -216,11 +210,22 @@ class DWA:
                 dist_obsticle = np.linalg.norm([obstacles[i][0] - path[j][0], obstacles[i][1] - path[j][1]]) - obstacles[i][2] - self.radius
                 if dist_obsticle < closest:
                     closest = dist_obsticle
+        rospy.loginfo_throttle(1.0, f'nearest obstacle: {closest}')
 
         return heading_diff, closest, d_score
     
     def create_DWA_arcs(self, current_vel):
         "creates all possible trajectories within a ceratin velocity limits and at a number of intervals of num_vel and selects the one with best score"
+        end_pose = self.current_pose
+        vector = self.waypoint - end_pose[:2]
+        dist2goal = np.linalg.norm(vector)
+
+        rospy.loginfo_throttle(1.0, f'how close? {dist2goal}')
+        angle_needed = np.arctan2(vector[1], vector[0])
+
+        heading_diff = wrap_angle(angle_needed - end_pose[2]) 
+        rospy.loginfo_throttle(1.0, f'heading_diff: {np.degrees(heading_diff)}')
+
         if not self.good_pose:
             rospy.logwarn('Pose update out of date, vel -> 0')
             return np.array([0,0]), None, []
@@ -255,16 +260,16 @@ class DWA:
     # This method is called every 0.1s. It computes the velocity comands in order to reach the 
     # next waypoint in the path. It also sends zero velocity commands if there is no active path.
     def controller(self, event):
+
         while not self.map_loaded and not rospy.is_shutdown():
-            rospy.loginfo("[dwa] Waiting for map to become ready...")
-            rospy.sleep(0.5)
+            rospy.loginfo_throttle(1.0, "[dwa] Waiting for map to become ready...")
 
         if len(self.path) == 0:
             if self.goal is not None:
-                rospy.loginfo("Moving without path! Testing?")
+                rospy.loginfo_throttle("Moving without path! Testing?")
 
             else:
-                rospy.loginfo("No path or goal, stopping movement")
+                rospy.loginfo_throttle(1.0, "No path or goal, stopping movement")
                 self.__send_commnd__(0, 0)
                 return  
         
@@ -306,8 +311,8 @@ class DWA:
         self.publish_dwa_arcs(best_course, arcs)
         # Publish velocity commands
         # To avoid sign confusion from first publish      
-        if self.control_iteration > 0:
-            self.current_velocity[1] *= -1
+        # if self.control_iteration >= 0:
+        #     self.current_velocity[1] *= -1
         #print("v: ", v, "w: ", w)
         self.__send_commnd__(self.current_velocity[0], self.current_velocity[1])
         self.control_iteration += 1
@@ -369,6 +374,15 @@ class DWA:
                     m.points.append(p)
                     m.colors.append(color_yellow)
         self.dwa_pub.publish(m)
+
+        goal_marker = Marker()
+        goal_marker.header.frame_id = "world_ned"
+        goal_marker.type = Marker.SPHERE
+        goal_marker.scale.x = goal_marker.scale.y = goal_marker.scale.z = 0.3
+        goal_marker.color.r = 1.0; goal_marker.color.a = 1.0
+        goal_marker.pose.position.x = self.goal[0]
+        goal_marker.pose.position.y = self.goal[1]
+        self.dwa_pub.publish(goal_marker)
 
 # MAIN FUNCTION
 if __name__ == '__main__':
