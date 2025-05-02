@@ -70,7 +70,7 @@ class StateValidityChecker:
         ax.grid(False)
         plt.show()
 
-    def map_set(self, map):
+    def map_set(self, map, flip=True):
         bin_map = np.zeros_like(map)
         for i in range(map.shape[0]):
             for j in range(map.shape[1]):
@@ -78,14 +78,15 @@ class StateValidityChecker:
                     bin_map[i,j] = 1
                 if map[i,j] == -1:
                     bin_map[i,j] = -1
-        # self.map_viz_debug(bin_map, 'before rotate and flip')
-        bin_map = self.rotate_and_flip(bin_map)
-        # self.map_viz_debug(bin_map, 'map_set')
+        if flip:
+            # self.map_viz_debug(bin_map, 'before rotate and flip')
+            bin_map = self.rotate_and_flip(bin_map)
+            # self.map_viz_debug(bin_map, 'map_set')
         return np.array(bin_map)
     
     # Set occupancy map, its resolution and origin. 
-    def set(self, data, resolution, origin):
-        self.map = self.map_set(data)
+    def set(self, data, resolution, origin, flip=True):
+        self.map = self.map_set(data, flip=flip)
         #self.map_viz_debug(self.map, 'set', self.current_pose[0:2])
         self.resolution = resolution
         self.origin = np.array(origin)

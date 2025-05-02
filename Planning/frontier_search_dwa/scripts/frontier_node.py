@@ -46,7 +46,7 @@ class OnlinePlanner:
 
         # FRONTIER SEARCH WEIGHTS      
         self.vpDist_w = 0.8     
-        self.fSize_w = 0.0           
+        self.fSize_w = 0.3           
 
         # Publisher for visualizing the path to with rviz
         self.marker_pub = rospy.Publisher('/path_marker', Marker, queue_size=1)

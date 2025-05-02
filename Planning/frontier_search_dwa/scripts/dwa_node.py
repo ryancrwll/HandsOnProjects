@@ -4,7 +4,7 @@ import rospy
 import numpy as np
 import traceback
 from geometry_msgs.msg import PoseStamped, Twist, PoseArray, Point
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import ColorRGBA
 from nav_msgs.msg import OccupancyGrid, Odometry, Path
 from frontier_search_dwa.msg import dwa
@@ -55,6 +55,7 @@ class DWA:
         self.cmd_pub =  rospy.Publisher(cmd_vel_topic, Twist, queue_size=1)
         # Publisher for possible dwa_arcs
         self.dwa_pub = rospy.Publisher('/dwa_arcs', Marker, queue_size=1)
+        # Publisher to tell planner to replan
         self.replan_pub = rospy.Publisher(replan_topic, dwa, queue_size=1)
         
         # SUBSCRIBERS
@@ -91,7 +92,7 @@ class DWA:
             env = np.array(gridmap.data).reshape(gridmap.info.height, gridmap.info.width).T
             # self.svc.map_viz_debug(env, 'env')
             origin = [gridmap.info.origin.position.x, gridmap.info.origin.position.y]
-            self.svc.set(env, gridmap.info.resolution, origin)
+            self.svc.set(env, gridmap.info.resolution, origin, flip=True)
             # self.svc.map_viz_debug(self.svc.map, 'svc', cell_pos)
             self.map_loaded = True
             self.create_obstacles()
@@ -111,6 +112,7 @@ class DWA:
                                                                 goal.pose.orientation.w])
         # Store current position (x, y, yaw) as a np.array in self.current_pose var.
         self.goal = np.array([goal.pose.position.x, goal.pose.position.y])
+        rospy.loginfo(f'Goal selected at {self.goal}')
         self.path = np.array([self.goal[:2]])
     
     def create_obstacles(self):
@@ -119,12 +121,20 @@ class DWA:
         clearance = np.hypot(self.svc.resolution,self.svc.resolution)
         self.obstacles = []
 
+        height, width = self.svc.map.shape
+        center_y = self.svc.origin[1] + (height * self.svc.resolution) / 2
+        center_x = self.svc.origin[0] + (width * self.svc.resolution) / 2
         try:
             obstacle_indices = np.argwhere(self.svc.map == 1)
             for i,j in obstacle_indices:
-                loc = self.svc.map_to_position(np.array([i,j]))
-                if loc is not None:
-                    self.obstacles.append([loc[0],loc[1],clearance]) #TODO maybe switch loc[0] and loc[1] or j and i above
+                map_x = j
+                map_y = i
+                
+                # Convert to world coordinates by mirroring about center axes
+                world_x = center_x*2 - (self.svc.origin[0] + (map_x + 0.5) * self.svc.resolution)
+                world_y = center_y*2 - (self.svc.origin[1] + (map_y + 0.5) * self.svc.resolution)
+                
+                self.obstacles.append([world_x, world_y, clearance])
         except Exception as e:
             rospy.logerr(f"Obstacle creation failed: {str(e)}\n{traceback.format_exc()}")
             self.obstacles = []
@@ -311,8 +321,8 @@ class DWA:
         self.publish_dwa_arcs(best_course, arcs)
         # Publish velocity commands
         # To avoid sign confusion from first publish      
-        # if self.control_iteration >= 0:
-        #     self.current_velocity[1] *= -1
+        if self.control_iteration >= 0:
+            self.current_velocity[1] *= -1
         #print("v: ", v, "w: ", w)
         self.__send_commnd__(self.current_velocity[0], self.current_velocity[1])
         self.control_iteration += 1
@@ -373,6 +383,7 @@ class DWA:
                     p.z = -0.3
                     m.points.append(p)
                     m.colors.append(color_yellow)
+                    m.lifetime = rospy.Duration(self.dt)
         self.dwa_pub.publish(m)
 
         goal_marker = Marker()
