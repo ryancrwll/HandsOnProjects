@@ -69,8 +69,8 @@ class OnlinePlanner:
     # Receives boolean to check if replan is needed
     def replan_cb(self, msg):
         if msg.replan_bool:
-            self.replan = True
-        else: self.replan = False
+            self.get_viewpoint()
+            self.plan()
 
     # Odometry callback: Gets current robot pose and stores it into self.current_pose
     def get_odom(self, odom):
@@ -208,7 +208,6 @@ class OnlinePlanner:
                     raise AssertionError("Empty Path")
                 break
             except AssertionError as e:
-                self.__send_commnd__(0,0)
                 self.vpDist_w = random.uniform(0,1)
                 self.fSize_w = random.uniform(0,1)
                 self.path = []

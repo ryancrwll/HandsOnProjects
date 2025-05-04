@@ -3,6 +3,8 @@
 import rospy
 import numpy as np
 import traceback
+import threading
+from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import PoseStamped, Twist, PoseArray, Point
 from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import ColorRGBA
@@ -16,21 +18,17 @@ def wrap_angle(angle):
     return abs((angle + np.pi) % (2*np.pi) - np.pi)
 
 class DWA:
-    def __init__(self, radius, gridmap_topic, odom_topic, cmd_vel_topic, path_topic, replan_topic):
+    def __init__(self, radius, odom_topic, cmd_vel_topic, path_topic, replan_topic, lidar_topic):
         # From frontier_search.py
         self.current_pose = None # (x,y,theta) #TODO put back if makes sense
         self.last_odom_time = rospy.Time.now().to_sec() # last logged time from receiving pose (seconds)
         self.good_pose = False # bool to tell if pose is recent enough to use
         self.path = []
         self.waypoint = None
-        self.svc = StateValidityChecker(radius) 
-        self.map_loaded = False # makes sure a map is ready
-        # Last time a map was received (to avoid map update too often)                                                
-        self.last_map_time = rospy.Time.now()
+        self.map_resolution = 0.05
+        self.map_loaded = False
         self.obstacles = [] # first two args are center coords and third is radius
-        if self.svc.map is not None:
-            self.create_obstacles() 
-        self.goal = None # need goal to know stopping distance (x,y,theta)
+        self.goal = [] # need goal to know stopping distance (x,y,theta)
         
         #### DWA CONTROLLER PARAMETERS ###
         # Maximum linear velocity control action, # Maximum angular velocity control action                 
@@ -40,14 +38,14 @@ class DWA:
         # Current Velocity
         self.current_velocity = [0.0, 0.0]  
         # DWA weights for tuning dyanmic window (heading, clearance, velocity, distance to goal) 
-        self.weights = np.array([0.0, 0.8, 0.5, 5.3]) # np.array([0.4, 0.8, 1.0, 1.3]) weights for tuning dyanmic window (heading, clearance, velocity, distance to goal)
+        self.weights = np.array([0.3, 0.8, 0.3, 1.3]) # np.array([0.4, 0.8, 1.0, 1.3]) weights for tuning dyanmic window (heading, clearance, velocity, distance to goal)
         # First velocity always opposite #TODO figure out!
         self.control_iteration = 0
         # Last time control function was called to know how ofen its gets called 
         self.last_control_time = rospy.Time.now().to_sec() # last logged time from setting velocities (seconds)
-        self.sim_time = 0.5 # how far ahead to project velocities (seconds)
+        self.sim_time = 1.5 # how far ahead to project velocities (seconds)
         self.dt = 0.15 # time step for simulating trajectories (seconds)
-        self.radius = self.svc.distance # radius of robot (meters)
+        self.radius = radius # radius of robot (meters)
         self.num_vel = 4 # sqrt of number of simulated trajectories to create
 
         # PUBLISHERS
@@ -59,16 +57,14 @@ class DWA:
         self.replan_pub = rospy.Publisher(replan_topic, dwa, queue_size=1)
         
         # SUBSCRIBERS
-        self.gridmap_sub = rospy.Subscriber(gridmap_topic, OccupancyGrid, self.get_gridmap) #subscriber to gridmap_topic from Octomap Server  
         self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.get_odom, queue_size=5) #subscriber to odom_topic  
         self.path_sub = rospy.Subscriber(path_topic, dwa, self.get_path)
         self.gotolocation = rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.get_selected_goal) #subscriber to /move_base_simple/goal published by rviz
+        self.lidar = rospy.Subscriber(lidar_topic, LaserScan, self.create_obstacles)
+        
         # TIMERS
         # Timer for velocity controller
-        rospy.Timer(rospy.Duration(0.05), self.controller)
-
-        # Should be same in both nodes
-        print(f"SVC params - res: {self.svc.resolution}, origin: {self.svc.origin}")
+        rospy.Timer(rospy.Duration(0.2), self.controller)
     
     # Odometry callback: Gets current robot pose and stores it into self.current_pose
     def get_odom(self, odom):
@@ -80,22 +76,6 @@ class DWA:
             self.current_pose = np.array([odom.pose.pose.position.x, odom.pose.pose.position.y, yaw])
             self.good_pose = rospy.Time.now().to_sec() - self.last_odom_time < 0.2
             self.last_odom_time = rospy.Time.now().to_sec()
-
-    
-    # Map callback: Gets the latest occupancy map published by Octomap server and update 
-    # the state validity checker
-    def get_gridmap(self, gridmap):
-        # To avoid map update too often (change value '1' if necessary)
-        if (gridmap.header.stamp - self.last_map_time).to_sec() > 1:            
-            self.last_map_time = gridmap.header.stamp
-            # Update State Validity Checker
-            env = np.array(gridmap.data).reshape(gridmap.info.height, gridmap.info.width).T
-            # self.svc.map_viz_debug(env, 'env')
-            origin = [gridmap.info.origin.position.x, gridmap.info.origin.position.y]
-            self.svc.set(env, gridmap.info.resolution, origin, flip=True)
-            # self.svc.map_viz_debug(self.svc.map, 'svc', cell_pos)
-            self.map_loaded = True
-            self.create_obstacles()
                 
     def get_path(self, msg):
         # Pass numpy array of path from frontier_dwa.py
@@ -115,26 +95,21 @@ class DWA:
         # rospy.loginfo(f'Goal selected at {self.goal}')
         self.path = np.array([self.goal[:2]])
     
-    def create_obstacles(self):
-        if self.svc.map is None:
-            return
-        clearance = np.hypot(self.svc.resolution,self.svc.resolution)
+    def create_obstacles(self, scan):
+        
+        clearance = np.hypot(self.map_resolution, self.map_resolution)
         self.obstacles = []
 
-        height, width = self.svc.map.shape
-        center_y = self.svc.origin[1] + (height * self.svc.resolution) / 2
-        center_x = self.svc.origin[0] + (width * self.svc.resolution) / 2
         try:
-            obstacle_indices = np.argwhere(self.svc.map == 1)
-            for i,j in obstacle_indices:
-                map_x = j
-                map_y = i
-                
-                # Convert to world coordinates by mirroring about center axes
-                world_x = center_x*2 - (self.svc.origin[0] + (map_x + 0.5) * self.svc.resolution)
-                world_y = center_y*2 - (self.svc.origin[1] + (map_y + 0.5) * self.svc.resolution)
-                
-                self.obstacles.append([world_x, world_y, clearance])
+            angle = scan.angle_min
+
+            for r in scan.ranges:
+                if r < 1:
+                    x = r * np.cos(angle)
+                    y = r * np.sin(angle)
+                    self.obstacles.append((x, y, clearance))
+                angle += scan.angle_increment
+            self.map_loaded = True
         except Exception as e:
             rospy.logerr(f"Obstacle creation failed: {str(e)}\n{traceback.format_exc()}")
             self.obstacles = []
@@ -163,18 +138,16 @@ class DWA:
     
     def generate_DWA(self, vel):
         staticConstraints = [0, self.v_lim[0], -self.v_lim[1], self.v_lim[1]]
-        stopping_dist = np.linalg.norm(self.goal[:2] - self.current_pose[:2])
-        stop_assurance = self.svc.map.shape[0]*self.svc.resolution/50
+        if len(self.path) != 0:
+            stopping_dist = np.linalg.norm(self.goal[:2] - self.current_pose[:2])
+        else:
+            stopping_dist = np.inf
+        stop_assurance = self.radius
         if stopping_dist > stop_assurance:
             stopping_dist -= stop_assurance
         # from physics equation vf^2 - vi^2 = 2 * a *d
         max_vel = np.sqrt(2 * self.a_lim[0] * stopping_dist)
         max_vel = min(max_vel, self.v_lim[0])
-        
-        # if np.abs(vel[0]<0.01) and stopping_dist>1.0:
-        #     dwa = np.array(staticConstraints)
-        #     dwa[1] = max_vel
-        # else:
         dynamicConstraints = [vel[0] - self.a_lim[0]*self.dt,
                                 vel[0] + self.a_lim[0]*self.dt,
                                 vel[1] - self.a_lim[1]*self.dt,
@@ -204,15 +177,11 @@ class DWA:
         angle_needed = np.arctan2(vector[1], vector[0])
         heading_diff = wrap_angle(angle_needed - end_pose[2]) 
 
-        # if dist2goal < 0.25:
-        #     d_score = -dist2goal*10
-        #     heading_diff = heading_diff*5
-        # else:
         d_score = -dist2goal
         
         closest = np.inf
 
-        #freeze values so that its not obdated during scoring
+        #freeze values so that its not outdated during scoring
         obstacles = self.obstacles
 
         for i in range(len(obstacles)):
@@ -220,21 +189,11 @@ class DWA:
                 dist_obsticle = np.linalg.norm([obstacles[i][0] - path[j][0], obstacles[i][1] - path[j][1]]) - obstacles[i][2] - self.radius
                 if dist_obsticle < closest:
                     closest = dist_obsticle
-        # rospy.loginfo_throttle(1.0, f'nearest obstacle: {closest}')
 
         return heading_diff, closest, d_score
     
     def create_DWA_arcs(self, current_vel):
         "creates all possible trajectories within a ceratin velocity limits and at a number of intervals of num_vel and selects the one with best score"
-        # end_pose = self.current_pose
-        # vector = self.waypoint - end_pose[:2]
-        # dist2goal = np.linalg.norm(vector)
-
-        # # rospy.loginfo_throttle(1.0, f'how close? {dist2goal}')
-        # angle_needed = np.arctan2(vector[1], vector[0])
-
-        # heading_diff = wrap_angle(angle_needed - end_pose[2]) 
-        # rospy.loginfo_throttle(1.0, f'heading_diff: {np.degrees(heading_diff)}')
 
         if not self.good_pose:
             rospy.logwarn('Pose update out of date, vel -> 0')
@@ -275,11 +234,11 @@ class DWA:
             rospy.loginfo_throttle(1.0, "[dwa] Waiting for map to become ready...")
 
         if len(self.path) == 0:
-            if self.goal is not None:
+            if len(self.goal) != 0:
                 rospy.loginfo_throttle(1.0, "Moving without path! Testing?")
 
             else:
-                rospy.loginfo_throttle(1.0, "No path or goal, stopping movement")
+                rospy.logwarn_throttle(1.0, "No path or goal, stopping movement")
                 self.__send_commnd__(0, 0)
                 return  
         
@@ -302,19 +261,22 @@ class DWA:
         goal_location = self.goal[0]==self.path[0][0] and self.goal[1]==self.path[0][1]
         if goal_location:
             # Goal is Reached
-            if dist_between_points(self.current_pose[:2], self.goal[:2]) < 0.02:
+            if dist_between_points(self.current_pose[:2], self.goal[:2]) < 0.12:
                 self.__send_commnd__(0,0)
                 del self.path[0]
+                self.goal = []
                 rospy.loginfo("Viewpoint reached!!!")
                 msg = dwa()
                 msg.replan_bool = True
+                # msg.path = []
+                # if self.replan_pub.get_num_connections() > 0:
+                rospy.loginfo("Replan requested")
                 self.replan_pub.publish(msg)
                 
         # Moves onto next waypoint in path
         elif dist_between_points(self.current_pose[:2], self.path[0]) <= 0.2 and not goal_location:
             del self.path[0]
             return
-        # Updating current pose and velocities
         self.current_velocity, best_course, arcs = self.create_DWA_arcs([self.current_velocity[0],self.current_velocity[1]])
         # self.current_pose = dwa.motion_model(self.current_pose, self.current_velocity) #TODO maybe this would help get more recent pose updates
         
@@ -390,6 +352,8 @@ class DWA:
                 p.z = -0.3
                 arrow_marker.points.append(p)
                 arrow_marker.colors.append(color_yellow)
+            self.dwa_pub.publish(arrow_marker)
+
 
 
         if best is not None:
@@ -427,22 +391,13 @@ class DWA:
             self.dwa_pub.publish(ideal_arrow)
         else:
             rospy.logerr('no best?')
-        
-
-        goal_marker = Marker()
-        goal_marker.header.frame_id = "world_ned"
-        goal_marker.type = Marker.SPHERE
-        goal_marker.scale.x = goal_marker.scale.y = goal_marker.scale.z = 0.3
-        goal_marker.color.r = 1.0; goal_marker.color.a = 1.0
-        goal_marker.pose.position.x = self.goal[0]
-        goal_marker.pose.position.y = self.goal[1]
-        self.dwa_pub.publish(goal_marker)
+    
 
 # MAIN FUNCTION
 if __name__ == '__main__':
-    rospy.init_node('frontier_dwa_node')   
+    rospy.init_node('frontier_dwa_node', log_level=rospy.DEBUG)   
 
-    node = DWA(0.2, '/projected_map', '/turtlebot/odom_ground_truth', '/turtlebot/kobuki/commands/velocity', '/path_for_dwa', '/replan')
+    node = DWA(0.2, '/turtlebot/odom_ground_truth', '/turtlebot/kobuki/commands/velocity', '/path_for_dwa', '/replan', '/turtlebot/kobuki/sensors/rplidar')
     
     # Run forever
     rospy.spin()
