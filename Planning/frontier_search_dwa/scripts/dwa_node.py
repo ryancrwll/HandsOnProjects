@@ -40,15 +40,15 @@ class DWA:
         # Current Velocity
         self.current_velocity = [0.0, 0.0]  
         # DWA weights for tuning dyanmic window (heading, clearance, velocity, distance to goal) 
-        self.weights = np.array([0.7, 0.8, 1.0, 1.3]) # np.array([0.4, 0.8, 1.0, 1.3]) weights for tuning dyanmic window (heading, clearance, velocity, distance to goal)
+        self.weights = np.array([0.0, 0.8, 0.5, 5.3]) # np.array([0.4, 0.8, 1.0, 1.3]) weights for tuning dyanmic window (heading, clearance, velocity, distance to goal)
         # First velocity always opposite #TODO figure out!
         self.control_iteration = 0
         # Last time control function was called to know how ofen its gets called 
-        self.last_control_time = None
-        self.sim_time = 1.0 # how far ahead to project velocities (seconds)
-        self.dt = 0.1 # time step for simulating trajectories (seconds)
+        self.last_control_time = rospy.Time.now().to_sec() # last logged time from setting velocities (seconds)
+        self.sim_time = 0.5 # how far ahead to project velocities (seconds)
+        self.dt = 0.15 # time step for simulating trajectories (seconds)
         self.radius = self.svc.distance # radius of robot (meters)
-        self.num_vel = 5 # sqrt of number of simulated trajectories to create
+        self.num_vel = 4 # sqrt of number of simulated trajectories to create
 
         # PUBLISHERS
         # Publisher for sending velocity commands to the robot
@@ -111,8 +111,8 @@ class DWA:
                                                                 goal.pose.orientation.z,
                                                                 goal.pose.orientation.w])
         # Store current position (x, y, yaw) as a np.array in self.current_pose var.
-        self.goal = np.array([goal.pose.position.x, goal.pose.position.y])
-        rospy.loginfo(f'Goal selected at {self.goal}')
+        # self.goal = np.array([goal.pose.position.x, goal.pose.position.y])
+        # rospy.loginfo(f'Goal selected at {self.goal}')
         self.path = np.array([self.goal[:2]])
     
     def create_obstacles(self):
@@ -162,7 +162,7 @@ class DWA:
         return np.array([x,y,theta], dtype=float)
     
     def generate_DWA(self, vel):
-        staticConstraints = [0.0, self.v_lim[0], -self.v_lim[1], self.v_lim[1]]
+        staticConstraints = [0, self.v_lim[0], -self.v_lim[1], self.v_lim[1]]
         stopping_dist = np.linalg.norm(self.goal[:2] - self.current_pose[:2])
         stop_assurance = self.svc.map.shape[0]*self.svc.resolution/50
         if stopping_dist > stop_assurance:
@@ -204,11 +204,11 @@ class DWA:
         angle_needed = np.arctan2(vector[1], vector[0])
         heading_diff = wrap_angle(angle_needed - end_pose[2]) 
 
-        if dist2goal < 0.25:
-            d_score = -dist2goal*10
-            heading_diff = heading_diff*5
-        else:
-            d_score = -dist2goal
+        # if dist2goal < 0.25:
+        #     d_score = -dist2goal*10
+        #     heading_diff = heading_diff*5
+        # else:
+        d_score = -dist2goal
         
         closest = np.inf
 
@@ -220,21 +220,21 @@ class DWA:
                 dist_obsticle = np.linalg.norm([obstacles[i][0] - path[j][0], obstacles[i][1] - path[j][1]]) - obstacles[i][2] - self.radius
                 if dist_obsticle < closest:
                     closest = dist_obsticle
-        rospy.loginfo_throttle(1.0, f'nearest obstacle: {closest}')
+        # rospy.loginfo_throttle(1.0, f'nearest obstacle: {closest}')
 
         return heading_diff, closest, d_score
     
     def create_DWA_arcs(self, current_vel):
         "creates all possible trajectories within a ceratin velocity limits and at a number of intervals of num_vel and selects the one with best score"
-        end_pose = self.current_pose
-        vector = self.waypoint - end_pose[:2]
-        dist2goal = np.linalg.norm(vector)
+        # end_pose = self.current_pose
+        # vector = self.waypoint - end_pose[:2]
+        # dist2goal = np.linalg.norm(vector)
 
-        rospy.loginfo_throttle(1.0, f'how close? {dist2goal}')
-        angle_needed = np.arctan2(vector[1], vector[0])
+        # # rospy.loginfo_throttle(1.0, f'how close? {dist2goal}')
+        # angle_needed = np.arctan2(vector[1], vector[0])
 
-        heading_diff = wrap_angle(angle_needed - end_pose[2]) 
-        rospy.loginfo_throttle(1.0, f'heading_diff: {np.degrees(heading_diff)}')
+        # heading_diff = wrap_angle(angle_needed - end_pose[2]) 
+        # rospy.loginfo_throttle(1.0, f'heading_diff: {np.degrees(heading_diff)}')
 
         if not self.good_pose:
             rospy.logwarn('Pose update out of date, vel -> 0')
@@ -259,7 +259,7 @@ class DWA:
                 c_score = np.log(c_score+0.01) # avoids log zero
                 # velocity score uses initial velocity and not final bc assuming constant velocity over the window bc it is our control input
                 # normalize it so that 1 is highest possible value
-                v_score = (dyn_windowL[i]/self.v_lim[0]);''' + 0.3*(dyn_windowA[i]/self.v_lim[1])'''
+                v_score = (dyn_windowL[i]/self.v_lim[0]) # + 0.3*(dyn_windowA[i]/self.v_lim[1])
                 score = np.array([h_score,c_score,v_score,d_score]) @ self.weights
                 if score > best_score:
                     best_score = score
@@ -276,7 +276,7 @@ class DWA:
 
         if len(self.path) == 0:
             if self.goal is not None:
-                rospy.loginfo_throttle("Moving without path! Testing?")
+                rospy.loginfo_throttle(1.0, "Moving without path! Testing?")
 
             else:
                 rospy.loginfo_throttle(1.0, "No path or goal, stopping movement")
@@ -317,14 +317,19 @@ class DWA:
         # Updating current pose and velocities
         self.current_velocity, best_course, arcs = self.create_DWA_arcs([self.current_velocity[0],self.current_velocity[1]])
         # self.current_pose = dwa.motion_model(self.current_pose, self.current_velocity) #TODO maybe this would help get more recent pose updates
-        # RVIZ plots for trajectories
-        self.publish_dwa_arcs(best_course, arcs)
+        
         # Publish velocity commands
         # To avoid sign confusion from first publish      
         if self.control_iteration >= 0:
             self.current_velocity[1] *= -1
-        #print("v: ", v, "w: ", w)
+        
+        # RVIZ plots for trajectories
+        self.publish_dwa_arcs(best_course, arcs)
         self.__send_commnd__(self.current_velocity[0], self.current_velocity[1])
+        current_time = rospy.Time.now().to_sec()
+        loop_time = current_time - self.last_control_time
+        rospy.logwarn(f'Time laken for one loop: {loop_time}')
+        self.last_control_time = current_time
         self.control_iteration += 1
     
     # PUBLISHER HELPERS
@@ -345,46 +350,84 @@ class DWA:
         delete_marker.header.frame_id = 'world_ned'
         delete_marker.header.stamp = rospy.Time.now()
         delete_marker.ns = 'dwa'
-        delete_marker.id = 3
-        delete_marker.action = Marker.DELETE
+        delete_marker.id = 0
+        delete_marker.action = Marker.DELETEALL
         self.dwa_pub.publish(delete_marker)
 
-        m = Marker()
-        m.header.frame_id = 'world_ned'
-        m.header.stamp = rospy.Time.now()
-        m.id = 3
-        m.type = Marker.CUBE_LIST
-        m.ns = 'dwa'
-        m.action = Marker.ADD
-        m.scale.x = self.svc.resolution
-        m.scale.y = self.svc.resolution
-        m.scale.z = 0.03
-        m.pose.orientation.w = 1.0
         color_orange=ColorRGBA(1,0.647,0,1)
         color_yellow=ColorRGBA(1,1,0,1)
-        used = []
-        if best is not None:
-            for point in best:
-                pos = point[:2]
-                used.append(tuple(pos))
-                p = Point()
-                p.x = pos[0]
-                p.y = pos[1]
-                p.z = -0.35
-                m.points.append(p)
-                m.colors.append(color_orange)
-        for arc in possible_arcs:
+        marker_scale = Point(0.03, 0.06, 0.1)
+
+        for i, arc in enumerate(possible_arcs):
+            m = Marker()
+            m.header.frame_id = 'world_ned'
+            m.header.stamp = rospy.Time.now()
+            m.id = 2*i+2
+            m.type = Marker.LINE_STRIP
+            m.ns = 'dwa'
+            m.action = Marker.ADD
+            m.scale.x = 0.002
+            m.pose.orientation.w = 1.0
             for point in arc:
-                pos = point[:2]
-                if pos is not None and tuple(pos) not in used:
-                    p = Point()
-                    p.x = pos[0]
-                    p.y = pos[1]
-                    p.z = -0.3
-                    m.points.append(p)
-                    m.colors.append(color_yellow)
-                    m.lifetime = rospy.Duration(self.dt)
-        self.dwa_pub.publish(m)
+                p = Point()
+                p.x = point[0]
+                p.y = point[1]
+                p.z = -0.3
+                m.points.append(p)
+                m.colors.append(color_yellow)
+            self.dwa_pub.publish(m)
+
+            arrow_marker = Marker()
+            arrow_marker.header.frame_id = 'world_ned'
+            arrow_marker.ns = 'dwa'
+            arrow_marker.id = 2*i+3
+            arrow_marker.type = Marker.ARROW
+            arrow_marker.scale = marker_scale
+            for j in [-2,-1]:
+                p = Point()
+                p.x = point[0]
+                p.y = point[1]
+                p.z = -0.3
+                arrow_marker.points.append(p)
+                arrow_marker.colors.append(color_yellow)
+
+
+        if best is not None:
+            ideal = Marker()
+            ideal.header.frame_id = 'world_ned'
+            ideal.header.stamp = rospy.Time.now()
+            ideal.ns = 'dwa'
+            ideal.id = 1001
+            ideal.type = Marker.LINE_STRIP
+            ideal.action = Marker.ADD
+            ideal.scale.x = 0.05
+            ideal.pose.orientation.w = 1.0
+            for point in best:
+                p = Point()
+                p.x = point[0]
+                p.y = point[1]
+                p.z = -0.35
+                ideal.points.append(p)
+                ideal.colors.append(color_orange)
+            self.dwa_pub.publish(ideal)
+
+            ideal_arrow = Marker()
+            ideal_arrow.header.frame_id = 'world_ned'
+            ideal_arrow.ns = 'dwa'
+            ideal_arrow.id = 1000
+            ideal_arrow.type = Marker.ARROW
+            ideal_arrow.scale = marker_scale
+            for j in [-2,-1]:
+                p = Point()
+                p.x = point[0]
+                p.y = point[1]
+                p.z = -0.3
+                ideal_arrow.points.append(p)
+                ideal_arrow.colors.append(color_yellow)
+            self.dwa_pub.publish(ideal_arrow)
+        else:
+            rospy.logerr('no best?')
+        
 
         goal_marker = Marker()
         goal_marker.header.frame_id = "world_ned"

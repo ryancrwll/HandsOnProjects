@@ -102,7 +102,10 @@ def create_DWA_arcs(current_pose, current_vel, num_vel):
             # norm values to be range (0,1)
             h_score /= np.pi 
             # use log to minimize importance of clearances that are very far away
-            c_score = np.log(c_score+0.001) # avoids log zero
+            try:
+                c_score = np.log(c_score) # avoids log zero
+            except:
+                c_score = -np.inf
             # velocity score uses initial velocity and not final bc assuming constant velocity over the window bc it is our control input
             # normalize it so that 1 is highest possible value
             v_score = 0.7*(dyn_windowL[i]/vel_limits[0]) + 0.3*(dyn_windowA[i]/vel_limits[1])
