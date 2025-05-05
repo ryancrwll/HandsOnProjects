@@ -55,6 +55,9 @@ class DWA:
         self.dwa_pub = rospy.Publisher('/dwa_arcs', Marker, queue_size=1)
         # Publisher to tell planner to replan
         self.replan_pub = rospy.Publisher(replan_topic, dwa, queue_size=1)
+        # Debug
+        self.ob_pub = rospy.Publisher('dwa_obstacles', MarkerArray, queue_size=1)
+
         
         # SUBSCRIBERS
         self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.get_odom, queue_size=5) #subscriber to odom_topic  
@@ -96,20 +99,24 @@ class DWA:
         self.path = np.array([self.goal[:2]])
     
     def create_obstacles(self, scan):
+        if not hasattr(self.current_pose, '__len__'):
+            return
         
         clearance = np.hypot(self.map_resolution, self.map_resolution)
         self.obstacles = []
+        robx, roby, heading = self.current_pose
 
         try:
             angle = scan.angle_min
 
             for r in scan.ranges:
                 if r < 1:
-                    x = r * np.cos(angle)
-                    y = r * np.sin(angle)
+                    x = (r * np.cos(angle+heading))+robx
+                    y = (r * np.sin(angle+heading))+roby
                     self.obstacles.append((x, y, clearance))
                 angle += scan.angle_increment
             self.map_loaded = True
+            self.publish_obstacles(self.obstacles)
         except Exception as e:
             rospy.logerr(f"Obstacle creation failed: {str(e)}\n{traceback.format_exc()}")
             self.obstacles = []
@@ -306,6 +313,48 @@ class DWA:
         cmd.angular.y = 0
         cmd.angular.z = w
         self.cmd_pub.publish(cmd)
+
+    def publish_obstacles(self, obstacles):
+        marker_array = MarkerArray()
+        
+        delete_marker = Marker()
+        delete_marker.header.frame_id = 'world_ned'
+        delete_marker.header.stamp = rospy.Time.now()
+        delete_marker.ns = 'obstacles'
+        delete_marker.id = 0
+        delete_marker.action = Marker.DELETEALL
+        marker_array.markers.append(delete_marker)
+        
+        if obstacles:
+            green = ColorRGBA(0, 1, 0, 0.7)
+            
+            m = Marker()
+            m.header.frame_id = 'world_ned'
+            m.header.stamp = rospy.Time.now()
+            m.ns = 'obstacles'
+            m.id = 1
+            m.type = Marker.SPHERE_LIST
+            m.action = Marker.ADD
+            m.pose.orientation.w = 1.0
+            
+            if len(obstacles) > 0:
+                m.scale.x = obstacles[0][2] * 2  
+                m.scale.y = obstacles[0][2] * 2
+                m.scale.z = obstacles[0][2] * 2
+            
+            for i, (x, y, radius) in enumerate(obstacles):
+                p = Point()
+                p.x = x
+                p.y = y
+                p.z = -0.3  
+                m.points.append(p)
+                m.colors.append(green)
+            
+            marker_array.markers.append(m)
+        
+        self.ob_pub.publish(marker_array)
+
+
 
     def publish_dwa_arcs(self, best, possible_arcs):
         delete_marker = Marker()
