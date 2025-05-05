@@ -39,6 +39,8 @@ class OnlinePlanner:
         self.last_map_time = rospy.Time.now()
         # Dominion [min_x_y, max_x_y] in which the path planner will sample configurations                           
         self.dominion = dominion 
+        # to check how far we have moved in the last 5 seconds
+        
         # Flags to prevent errors
         self.map_loaded = False   
         self.planning = False  
@@ -80,6 +82,7 @@ class OnlinePlanner:
                                                                 odom.pose.pose.orientation.w])
             # Store current position (x, y, yaw) as a np.array in self.current_pose var.
             self.current_pose = np.array([odom.pose.pose.position.x, odom.pose.pose.position.y, yaw])
+            self.last_pose = self.current_pose
             self.last_odom_time = rospy.Time.now().to_sec()
 
     # Map callback: Gets the latest occupancy map published by Octomap server and update 
@@ -141,6 +144,7 @@ class OnlinePlanner:
         
         cell_pos = self.svc.position_to_map(self.current_pose[:2])
         distance_pixel = int(self.svc.distance / self.svc.resolution)+1
+        print(f'AAAAAAAAAAAAAAAAAA {self.svc.map}')
         check_dist = int(distance_pixel*1.25)
         min_travel_dist = distance_pixel
         valid_vp = np.array([None])

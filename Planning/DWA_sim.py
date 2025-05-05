@@ -27,7 +27,7 @@ weights = np.array([0.4, 0.8, 1.0, 1.3]) # Weights for tuning dyanmic window (he
 obstacles = [np.array([20.0, 23.0, 8.0]), np.array([38.0, -60.0, 16.0]), np.array([-78.0, -2.0, 12.0]), np.array([-25.0, -25.0, 20.0])]  # (x, y, radius)
 
 # Create robot
-radius = 0.5
+radius = 4.0
 robot = Circle((pose[0], pose[1]), radius, color='blue', zorder=2)
 ax.add_patch(robot)
 for i in range(len(obstacles)):

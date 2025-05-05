@@ -32,21 +32,23 @@ class DWA:
         
         #### DWA CONTROLLER PARAMETERS ###
         # Maximum linear velocity control action, # Maximum angular velocity control action                 
-        self.v_lim = np.array([0.2,0.2])
+        self.v_lim = np.array([0.15,0.6])
+        self.backwards_vel = -self.v_lim[0]/75
         # linear and angular accel limits
         self.a_lim  = np.array([0.5, 1.0])    
         # Current Velocity
         self.current_velocity = [0.0, 0.0]  
         # DWA weights for tuning dyanmic window (heading, clearance, velocity, distance to goal) 
-        self.weights = np.array([0.3, 0.8, 0.3, 1.3]) # np.array([0.4, 0.8, 1.0, 1.3]) weights for tuning dyanmic window (heading, clearance, velocity, distance to goal)
+        self.weights = np.array([0.7, 0.1, 0.4, 2.3]) # np.array([0.4, 0.8, 1.0, 1.3]) weights for tuning dyanmic window (heading, clearance, velocity, distance to goal)
         # First velocity always opposite #TODO figure out!
         self.control_iteration = 0
         # Last time control function was called to know how ofen its gets called 
         self.last_control_time = rospy.Time.now().to_sec() # last logged time from setting velocities (seconds)
-        self.sim_time = 1.5 # how far ahead to project velocities (seconds)
-        self.dt = 0.15 # time step for simulating trajectories (seconds)
+        self.sim_time = 3.0 # how far ahead to project velocities (seconds)
+        self.max_dist = self.v_lim[0]*self.sim_time
+        self.dt = 0.2 # time step for simulating trajectories (seconds)
         self.radius = radius # radius of robot (meters)
-        self.num_vel = 4 # sqrt of number of simulated trajectories to create
+        self.num_vel = 5 # sqrt of number of simulated trajectories to create
 
         # PUBLISHERS
         # Publisher for sending velocity commands to the robot
@@ -56,7 +58,7 @@ class DWA:
         # Publisher to tell planner to replan
         self.replan_pub = rospy.Publisher(replan_topic, dwa, queue_size=1)
         # Debug
-        self.ob_pub = rospy.Publisher('dwa_obstacles', MarkerArray, queue_size=1)
+        self.ob_pub = rospy.Publisher('/dwa_obstacles', MarkerArray, queue_size=1)
 
         
         # SUBSCRIBERS
@@ -102,7 +104,7 @@ class DWA:
         if not hasattr(self.current_pose, '__len__'):
             return
         
-        clearance = np.hypot(self.map_resolution, self.map_resolution)
+        clearance = self.map_resolution
         self.obstacles = []
         robx, roby, heading = self.current_pose
 
@@ -110,7 +112,7 @@ class DWA:
             angle = scan.angle_min
 
             for r in scan.ranges:
-                if r < 1:
+                if r < self.max_dist:
                     x = (r * np.cos(angle+heading))+robx
                     y = (r * np.sin(angle+heading))+roby
                     self.obstacles.append((x, y, clearance))
@@ -144,7 +146,7 @@ class DWA:
         return np.array([x,y,theta], dtype=float)
     
     def generate_DWA(self, vel):
-        staticConstraints = [0, self.v_lim[0], -self.v_lim[1], self.v_lim[1]]
+        staticConstraints = [self.backwards_vel, self.v_lim[0], -self.v_lim[1], self.v_lim[1]]
         if len(self.path) != 0:
             stopping_dist = np.linalg.norm(self.goal[:2] - self.current_pose[:2])
         else:
@@ -221,8 +223,11 @@ class DWA:
                 h_score, c_score, d_score = self.calc_scoring_vals(arc)
                 # norm values to be range (0,1)
                 h_score = 1 - (h_score/np.pi) 
-                # use log to minimize importance of clearances that are very far away
-                c_score = np.log(c_score+0.01) # avoids log zero
+                # use sigmoid to minimize importance of clearances that are very far away
+                if c_score > 0:
+                    c_score = (2/(1+np.exp(-50*c_score)))-1 # values between one and zero
+                else:
+                    c_score = -np.inf
                 # velocity score uses initial velocity and not final bc assuming constant velocity over the window bc it is our control input
                 # normalize it so that 1 is highest possible value
                 v_score = (dyn_windowL[i]/self.v_lim[0]) # + 0.3*(dyn_windowA[i]/self.v_lim[1])

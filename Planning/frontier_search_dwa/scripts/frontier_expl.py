@@ -91,7 +91,7 @@ class frontier:
         best_vp = None
         largest_frontier = max(group_size)
         farthest_frontier = max(group_dist)
-        print('biggest frontier is:  ', largest_frontier, ' frontiers')
+        print('biggest frontier group is:  ', largest_frontier, ' frontier cells')
         print('closest frontier is:  ', min(group_dist), ' cells away')
 
         for i in range(len(group_dist)):
