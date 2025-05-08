@@ -101,6 +101,12 @@ class frontier:
                 highscore = score
                 best_vp = ideal_vps[i]
                 best_group = groups[i]
+        # finds cell closest to the center of the centroid of the group
+        # if best_vp is not None:
+        #     x_vals = [cell[0] for cell in best_group]
+        #     y_vals = [cell[1] for cell in best_group]
+        #     best_vp = np.array([int(sum(x_vals)/len(x_vals)), int(sum(y_vals)/len(y_vals))])
+            # for cell in best_group
         print(f'Viewpoint selected at {best_vp}')
         return best_vp, best_group, frontiers
         

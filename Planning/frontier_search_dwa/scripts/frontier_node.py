@@ -40,7 +40,7 @@ class OnlinePlanner:
         # Dominion [min_x_y, max_x_y] in which the path planner will sample configurations                           
         self.dominion = dominion 
         # to check how far we have moved in the last 5 seconds
-        
+
         # Flags to prevent errors
         self.map_loaded = False   
         self.planning = False  
@@ -138,13 +138,12 @@ class OnlinePlanner:
 
     def get_viewpoint(self):
         map = self.svc.map
-        if np.count_nonzero(map == -1) < (map.shape[0]*map.shape[1])*0.03:
+        if np.count_nonzero(map == -1) < (map.shape[0]*map.shape[1])*0.01:
             print('Map has been 99 percent explored!')
             raise AssertionError("Map sufficiently explored! :)")
         
         cell_pos = self.svc.position_to_map(self.current_pose[:2])
         distance_pixel = int(self.svc.distance / self.svc.resolution)+1
-        print(f'AAAAAAAAAAAAAAAAAA {self.svc.map}')
         check_dist = int(distance_pixel*1.25)
         min_travel_dist = distance_pixel
         valid_vp = np.array([None])
@@ -188,7 +187,7 @@ class OnlinePlanner:
         self.plan()
 
     # Solve plan from current position to self.goal. 
-    def plan(self, attempts=5):
+    def plan(self, attempts=50):
 
         attempts_left = attempts
         self.planning = True
@@ -206,7 +205,8 @@ class OnlinePlanner:
                     self.get_viewpoint()
                     attempts -= 1
                     continue
-                self.path = compute_path_global(start_p=self.current_pose[0:2], goal_p=goal, state_validity_checker=self.svc, dominion=self.dominion)
+                self.publish_path_dwa(np.array([self.goal]))
+                self.path = compute_path_global(start_p=self.current_pose[0:2], goal_p=goal, state_validity_checker=self.svc, dominion=self.dominion, max_iterations=10000)
 
                 if not self.path:
                     raise AssertionError("Empty Path")
@@ -231,11 +231,13 @@ class OnlinePlanner:
         if len(self.path) == 0:
             print("Path not found!")
             self.get_viewpoint()
+        
         else:
             print("Path found")
             # Publish plan marker to visualize in rviz
             self.publish_path_rviz()
-            self.publish_path_dwa()
+        
+            self.publish_path_dwa(self.path)
             # remove initial waypoint in the path (current pose is already reached)
             #del self.path[0]                 
             #    
@@ -247,12 +249,13 @@ class OnlinePlanner:
     # PUBLISHER HELPERS
 
     # Publish a path for dwa
-    def publish_path_dwa(self):
+    def publish_path_dwa(self, path):
         path_msg = dwa()
+        path_msg.planning = self.planning
         path_msg.replan_bool = False
         
-        if len(self.path) > 0 and self.path is not None:
-            for point in self.path:
+        if len(path) > 0 and self.path is not None:
+            for point in path:
                 pose = PoseStamped()
                 pose.header.frame_id = "world_ned"
                 pose.header.stamp = rospy.Time.now()

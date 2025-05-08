@@ -203,9 +203,6 @@ class Planner:
         pass
     
     def compute_path(self):
-        if  self.svc.is_valid_pixel(self.start.coord, plot=False) == False:
-            raise AssertionError("Start is in collision, Please restart the simulation")
-            pass
         #Goal collision check done in plan()
         for k in range(self.max_iterations):
             # 1. Sample a random node
