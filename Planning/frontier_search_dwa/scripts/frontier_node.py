@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-from turtle import distance
 import numpy as np
 import rospy
 import tf
@@ -23,9 +22,11 @@ from online_planning import StateValidityChecker, Node, move_to_point, compute_p
 class OnlinePlanner:
 
     # OnlinePlanner Constructor
-    def __init__(self, gridmap_topic, odom_topic, dominion, distance_threshold):
+    def __init__(self, gridmap_topic, odom_topic, dominion, distance_threshold, segmented_search: bool):
 
         # ATTRIBUTES 
+        # search map segments at a time
+        self.segmented_search = segmented_search
         # List of points which define the plan. None if there is no plan
         self.path = []
         # State Validity Checker object (passes Map)                                                
@@ -37,6 +38,8 @@ class OnlinePlanner:
         self.goal = None
         # Last time a map was received (to avoid map update too often)                                                
         self.last_map_time = rospy.Time.now()
+        self.unknown_cells = 0
+        self.last_map_check = rospy.Time.now()
         # Dominion [min_x_y, max_x_y] in which the path planner will sample configurations                           
         self.dominion = dominion 
         # area to search for frontiers
@@ -49,13 +52,13 @@ class OnlinePlanner:
         self.replan = False
 
         # FRONTIER SEARCH WEIGHTS      
-        self.vpDist_w = 0.8     
+        self.vpDist_w = 0.6     
         self.fSize_w = 0.3           
 
         # Publisher for visualizing the path to with rviz
         self.marker_pub = rospy.Publisher('/path_marker', Marker, queue_size=1)
         # Publisher for visualizing frontiers and viewpoints
-        self.frontier_pub = rospy.Publisher('/frontier_markers', Marker, queue_size=1)
+        self.frontier_pub = rospy.Publisher('/frontier_markers', Marker, queue_size=15)
         # Publisher for sending path to DWA controller
         self.path_pub = rospy.Publisher('/path_for_dwa', dwa, queue_size = 1)
         
@@ -64,7 +67,7 @@ class OnlinePlanner:
         self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.get_odom, queue_size=5) #subscriber to odom_topic  
         self.gotolocation = rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.get_selected_goal) #subscriber to /move_base_simple/goal published by rviz
         self.testing = rospy.Service('/explore', Trigger, self.debug_explore)
-        self.exploring = rospy.Timer(rospy.Duration(10.0), self.explore, oneshot=False)
+        self.exploring = rospy.Timer(rospy.Duration(5.0), self.explore, oneshot=True)
         self.replan_sub = rospy.Subscriber('/replan', dwa, self.replan_cb)
     
     # Receives boolean to check if replan is needed
@@ -100,9 +103,16 @@ class OnlinePlanner:
             if len(self.path) > 0:
                 path_good = self.svc.check_path(self.path)
                 if not path_good:
+                    self.path = []
                     self.get_viewpoint()
                     self.plan()
-
+        # check to see if map has changed at all to see if stuck
+        if (gridmap.header.stamp - self.last_map_time).to_sec() > 8: 
+            if not self.did_map_change():
+                rospy.logerr('No map change in last 8 seconds, replanning')
+                self.path = []
+                self.get_viewpoint()
+                self.plan()
     # Goal callback: Get new goal from /move_base_simple/goal topic published by rviz 
     # and computes a plan to it using self.plan() method
     def get_selected_goal(self, goal):
@@ -134,8 +144,28 @@ class OnlinePlanner:
                             best = score
                             valid_vp = cell_loc
             return valid_vp
+        
+    def how_many_unknown(self):
+        return np.count_nonzero(map == -1)
+        
+    def did_map_change(self):
+        current_unknown = np.count_nonzero(map == -1)
+        is_True = False
+        if current_unknown < self.unknown_cells-10:
+            is_True = True
+        else:
+            is_True = False
+        self.unknown_cells = current_unknown
+        return is_True
 
     def get_viewpoint(self):
+        if self.segmented_search:
+            k = 0
+            if k < 1:
+                k+=1
+                self.search_center = self.svc.position_to_map(self.current_pose[:2])
+                self.search_dist = 30
+
         map = self.svc.map
         if np.count_nonzero(map == -1) < (map.shape[0]*map.shape[1])*0.02:
             print(' has been 98 percent explored!')
@@ -150,6 +180,8 @@ class OnlinePlanner:
             explore = frontier(map, cell_pos, self.vpDist_w, self.fSize_w, search_center=self.search_center, search_distance=self.search_dist)
             vp, best_group, frontiers = explore.choose_vp(travel_dist=min_travel_dist)
             if len(best_group) < 1:
+                if self.segmented_search:
+                    k = 0
                 rospy.logerr('Nothing left to explore, frontiers are all too small')
                 self.goal = None
                 return
@@ -170,16 +202,16 @@ class OnlinePlanner:
             rob_square.append([rob_tox,i])
         rob_square = np.array(rob_square)
 
-        fr_fromx, fr_fromy = valid_vp[0]-distance_pixel, valid_vp[1]-distance_pixel
-        fr_tox, fr_toy = valid_vp[0] + distance_pixel, valid_vp[1]+distance_pixel
-        fr_square = []
-        for i in range(fr_fromx,fr_tox+1):
-            fr_square.append([i,fr_fromy])
-            fr_square.append([i,fr_toy])
-        for i in range(fr_fromy,fr_toy+1):
-            fr_square.append([fr_fromx,i])
-            fr_square.append([fr_tox,i])
-        fr_square = np.array(fr_square)
+        fr_square = None
+        if self.search_dist is not None:
+            fr_fromx, fr_fromy = self.search_center[0]-self.search_dist, self.search_center[1]-self.search_dist
+            fr_tox, fr_toy = self.search_center[0] + self.search_dist, self.search_center[1]+self.search_dist
+            fr_square = []
+            fr_square.append([fr_fromx,fr_fromy])
+            fr_square.append([fr_fromx,fr_toy])
+            fr_square.append([fr_tox,fr_toy])
+            fr_square.append([fr_tox,fr_fromy])
+            fr_square = np.array(fr_square)
         
         self.publish_frontiers(frontiers, best_group, rob_square, fr_square)
         print(f"Current gridmap location: {cell_pos}")
@@ -340,30 +372,31 @@ class OnlinePlanner:
         delete_marker.action = Marker.DELETE
         self.frontier_pub.publish(delete_marker)
 
-        search_area = Marker()
-        search_area.header.frame_id = 'world_ned'
-        search_area.header.stamp = rospy.Time.now()
-        search_area.id = 9000
-        search_area.type = Marker.LINE_STRIP
-        search_area.ns = 'search_square'
-        search_area.action = Marker.ADD
-        search_area.scale.x = 0.12
-        search_area.scale.z = 1.0
-        search_area.pose.orientation.w = 1.0
-        search_area.color = ColorRGBA(1,0,0,1)
-        for cell in frontier_area:
-            pos = self.svc.map_to_position(cell)
-            if pos is not None:
-                    print('here')
-                    p = Point()
-                    p.x = pos[0]
-                    p.y = pos[1]
-                    p.z = -0.06
-                    search_area.points.append(p)
-            else:
-                print('WHYYYYYYYYYYYYYYYYYYYYYYYYY')
-        search_area.points.append(search_area.points[0])
-        self.frontier_pub.publish(search_area)
+        if frontier_area is not None:
+            search_area = Marker()
+            search_area.header.frame_id = 'world_ned'
+            search_area.header.stamp = rospy.Time.now()
+            search_area.id = 9000
+            search_area.type = Marker.LINE_STRIP
+            search_area.ns = 'search_square'
+            search_area.action = Marker.ADD
+            search_area.scale.x = 0.12
+            search_area.scale.z = 1.0
+            search_area.pose.orientation.w = 1.0
+            search_area.color = ColorRGBA(1,0,0,1)
+            for cell in frontier_area:
+                pos = self.svc.map_to_position(cell)
+                if pos is not None:
+                        print('here')
+                        p = Point()
+                        p.x = pos[0]
+                        p.y = pos[1]
+                        p.z = -0.06
+                        search_area.points.append(p)
+                else:
+                    print('WHYYYYYYYYYYYYYYYYYYYYYYYYY')
+            search_area.points.append(search_area.points[0])
+            self.frontier_pub.publish(search_area)
                     
 
         m = Marker()
@@ -429,7 +462,7 @@ class OnlinePlanner:
 if __name__ == '__main__':
     rospy.init_node('frontier_dwa_node')   
 
-    node = OnlinePlanner('/projected_map', "/turtlebot/odom_ground_truth", np.array([-10.0, 10.0, -10.0, 10.0]), 0.2)
+    node = OnlinePlanner('/projected_map', "/turtlebot/odom_ground_truth", np.array([-10.0, 10.0, -10.0, 10.0]), 0.2, segmented_search=False)
     
     # Run forever
     rospy.spin()
