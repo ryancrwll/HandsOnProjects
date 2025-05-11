@@ -39,7 +39,9 @@ class OnlinePlanner:
         self.last_map_time = rospy.Time.now()
         # Dominion [min_x_y, max_x_y] in which the path planner will sample configurations                           
         self.dominion = dominion 
-        # to check how far we have moved in the last 5 seconds
+        # area to search for frontiers
+        self.search_center = None #[0,0] #pixel location
+        self.search_dist = None #20 #in pixels
 
         # Flags to prevent errors
         self.map_loaded = False   
@@ -62,11 +64,8 @@ class OnlinePlanner:
         self.odom_sub = rospy.Subscriber(odom_topic, Odometry, self.get_odom, queue_size=5) #subscriber to odom_topic  
         self.gotolocation = rospy.Subscriber("/move_base_simple/goal", PoseStamped, self.get_selected_goal) #subscriber to /move_base_simple/goal published by rviz
         self.testing = rospy.Service('/explore', Trigger, self.debug_explore)
-        self.exploring = rospy.Timer(rospy.Duration(1.0), self.explore, oneshot=True)
+        self.exploring = rospy.Timer(rospy.Duration(10.0), self.explore, oneshot=False)
         self.replan_sub = rospy.Subscriber('/replan', dwa, self.replan_cb)
-
-        # Should be same in both nodes
-        print(f"SVC params - res: {self.svc.resolution}, origin: {self.svc.origin}")
     
     # Receives boolean to check if replan is needed
     def replan_cb(self, msg):
@@ -101,6 +100,7 @@ class OnlinePlanner:
             if len(self.path) > 0:
                 path_good = self.svc.check_path(self.path)
                 if not path_good:
+                    self.get_viewpoint()
                     self.plan()
 
     # Goal callback: Get new goal from /move_base_simple/goal topic published by rviz 
@@ -121,7 +121,6 @@ class OnlinePlanner:
         if self.svc.is_valid_pixel(desired_location):
             return desired_location
         else:
-            print("in loop")
             best = np.inf
             valid_vp = np.array([None])
             for i in range(-check_dist, check_dist+1):
@@ -138,8 +137,8 @@ class OnlinePlanner:
 
     def get_viewpoint(self):
         map = self.svc.map
-        if np.count_nonzero(map == -1) < (map.shape[0]*map.shape[1])*0.01:
-            print('Map has been 99 percent explored!')
+        if np.count_nonzero(map == -1) < (map.shape[0]*map.shape[1])*0.02:
+            print(' has been 98 percent explored!')
             raise AssertionError("Map sufficiently explored! :)")
         
         cell_pos = self.svc.position_to_map(self.current_pose[:2])
@@ -148,27 +147,41 @@ class OnlinePlanner:
         min_travel_dist = distance_pixel
         valid_vp = np.array([None])
         while valid_vp[0] == None:
-            explore = frontier(map, cell_pos, self.vpDist_w, self.fSize_w)
+            explore = frontier(map, cell_pos, self.vpDist_w, self.fSize_w, search_center=self.search_center, search_distance=self.search_dist)
             vp, best_group, frontiers = explore.choose_vp(travel_dist=min_travel_dist)
+            if len(best_group) < 1:
+                rospy.logerr('Nothing left to explore, frontiers are all too small')
+                self.goal = None
+                return
             valid_vp = self.closest_valid_point(cell_pos, vp, check_dist)  
             min_travel_dist += int(distance_pixel*0.25) 
-            print('No valid vp at desired location... expanding possible vps')
         # self.svc.map_viz_debug(map,'get_viewpoint', cell_pos, valid_vp)
         self.goal = np.array(self.svc.map_to_position(valid_vp))
 
         # for plotting in rviz
-        fromx, fromy = valid_vp[0]-distance_pixel, valid_vp[1]-distance_pixel
-        tox, toy = valid_vp[0] + distance_pixel, valid_vp[1]+distance_pixel
-        square = []
-        for i in range(fromx,tox+1):
-            square.append([i,fromy])
-            square.append([i,toy])
-        for i in range(fromy,toy+1):
-            square.append([fromx,i])
-            square.append([tox,i])
-        square = np.array(square)
+        rob_fromx, rob_fromy = valid_vp[0]-distance_pixel, valid_vp[1]-distance_pixel
+        rob_tox, rob_toy = valid_vp[0] + distance_pixel, valid_vp[1]+distance_pixel
+        rob_square = []
+        for i in range(rob_fromx,rob_tox+1):
+            rob_square.append([i,rob_fromy])
+            rob_square.append([i,rob_toy])
+        for i in range(rob_fromy,rob_toy+1):
+            rob_square.append([rob_fromx,i])
+            rob_square.append([rob_tox,i])
+        rob_square = np.array(rob_square)
+
+        fr_fromx, fr_fromy = valid_vp[0]-distance_pixel, valid_vp[1]-distance_pixel
+        fr_tox, fr_toy = valid_vp[0] + distance_pixel, valid_vp[1]+distance_pixel
+        fr_square = []
+        for i in range(fr_fromx,fr_tox+1):
+            fr_square.append([i,fr_fromy])
+            fr_square.append([i,fr_toy])
+        for i in range(fr_fromy,fr_toy+1):
+            fr_square.append([fr_fromx,i])
+            fr_square.append([fr_tox,i])
+        fr_square = np.array(fr_square)
         
-        self.publish_frontiers(frontiers, best_group, square)
+        self.publish_frontiers(frontiers, best_group, rob_square, fr_square)
         print(f"Current gridmap location: {cell_pos}")
         print(f"Next viewpoint selected at {self.goal}")
 
@@ -318,14 +331,40 @@ class OnlinePlanner:
             self.marker_pub.publish(m)
             print ("path published")
     
-    def publish_frontiers(self, frontiers, selected_group, vp):
+    def publish_frontiers(self, frontiers, selected_group, vp, frontier_area):
         delete_marker = Marker()
         delete_marker.header.frame_id = 'world_ned'
         delete_marker.header.stamp = rospy.Time.now()
         delete_marker.ns = 'frontier'
-        delete_marker.id = 1
+        delete_marker.id = 3542
         delete_marker.action = Marker.DELETE
         self.frontier_pub.publish(delete_marker)
+
+        search_area = Marker()
+        search_area.header.frame_id = 'world_ned'
+        search_area.header.stamp = rospy.Time.now()
+        search_area.id = 9000
+        search_area.type = Marker.LINE_STRIP
+        search_area.ns = 'search_square'
+        search_area.action = Marker.ADD
+        search_area.scale.x = 0.12
+        search_area.scale.z = 1.0
+        search_area.pose.orientation.w = 1.0
+        search_area.color = ColorRGBA(1,0,0,1)
+        for cell in frontier_area:
+            pos = self.svc.map_to_position(cell)
+            if pos is not None:
+                    print('here')
+                    p = Point()
+                    p.x = pos[0]
+                    p.y = pos[1]
+                    p.z = -0.06
+                    search_area.points.append(p)
+            else:
+                print('WHYYYYYYYYYYYYYYYYYYYYYYYYY')
+        search_area.points.append(search_area.points[0])
+        self.frontier_pub.publish(search_area)
+                    
 
         m = Marker()
         m.header.frame_id = 'world_ned'
@@ -353,7 +392,7 @@ class OnlinePlanner:
         color_purple.g = 0
         color_purple.b = 1
         color_purple.a = 1
-
+        
         used = []
         for cell in vp:
             pos = self.svc.map_to_position(cell)

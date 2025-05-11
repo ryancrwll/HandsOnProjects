@@ -128,10 +128,11 @@ class StateValidityChecker:
         return matrix
     
     def collision_free(self, point1, point2, plot=False):
+        #not needed with dwa
         num_steps = max(abs(point2[0] - point1[0]), abs(point2[1] - point1[1])) +1
         # Interpolate x and y coordinates
-        x_values = np.linspace(point1[0], point2[0], num_steps+10)
-        y_values = np.linspace(point1[1], point2[1], num_steps+10)
+        x_values = np.linspace(point1[0], point2[0], num_steps)
+        y_values = np.linspace(point1[1], point2[1], num_steps)
         
         # Combine x and y into pixel coordinates
         pixels = list(zip((np.floor(x_values)).astype(int), (np.floor(y_values)).astype(int)))
@@ -174,12 +175,18 @@ class StateValidityChecker:
     
     def check_path(self, path):
         if len(path) < 2:
-            #path is just two locations already checked by RRT
+            # path is just two locations already checked by RRT
             return True
+        # for use without dwa
         for i in range(len(path)-1):
             if not self.collision_free(self.position_to_map(path[i]), self.position_to_map(path[i+1])):
                 print ("Collision between ", path[i], path[i+1])
                 return False
+        # for dwa just care about the way points
+        # for i in range(len(path)-1):
+        #     if not self.is_valid_pixel(self.position_to_map(path[i])):
+        #         print ("Collision at ", path[i])
+        #         return False
         return True
     
 

@@ -4,10 +4,13 @@ import numpy as np
 from online_planning import StateValidityChecker
 
 class frontier:
-    def __init__(self, descritized_map, current_pose, vpDist_w, fSize_w):
+    def __init__(self, descritized_map, current_pose, vpDist_w, fSize_w, search_center=None, search_distance=None):
         self.map = descritized_map.T
         self.visited = set()    #used for bfs
         self.pose = current_pose
+        # area to search for frontiers
+        self.search_center = search_center
+        self.search_distance = search_distance
         self.weights = np.array([vpDist_w, fSize_w])  #set weights for how to decide viewpoint (distance or number within a group of frontiers)
 
     def get_neighbors(self, cell, connectivity=4):
@@ -34,8 +37,12 @@ class frontier:
                 if self.map[i,j] == 0:
                     for x, y in self.get_neighbors((i,j)):
                         if self.map[x,y] == -1:
-                            frontiers.add((i,j))
-        print('Frontiers gathered...')
+                            if self.search_center is not None:
+                                if ((i - self.search_center[0] <= self.search_distance) and
+                                    (j - self.search_center[1] <= self.search_distance)):
+                                    frontiers.add((i,j))
+                            else:
+                                frontiers.add((i,j))
         return list(frontiers)
     
     def breadth_first_search(self, start, points):
@@ -58,8 +65,8 @@ class frontier:
         for frontier in frontiers:
             if frontier not in self.visited:
                 group = self.breadth_first_search(frontier, frontiers)
-                grouped_f.append(group)
-        print(f"Frontiers grouped... {len(grouped_f)} groups found")
+                if len(group) >2:
+                    grouped_f.append(group)
         return grouped_f, frontiers
     
     def choose_vp(self, travel_dist):
@@ -69,7 +76,8 @@ class frontier:
         group_size = []
         ideal_vps = []
         groups = []
-
+        if len(grouped_f) < 1:
+            return None, np.array([]), np.array([])
         for group in grouped_f:
             group_size.append(len(group))
             closest = np.inf
@@ -91,8 +99,6 @@ class frontier:
         best_vp = None
         largest_frontier = max(group_size)
         farthest_frontier = max(group_dist)
-        print('biggest frontier group is:  ', largest_frontier, ' frontier cells')
-        print('closest frontier is:  ', min(group_dist), ' cells away')
 
         for i in range(len(group_dist)):
             values = np.array([1-group_dist[i]/farthest_frontier, group_size[i]/largest_frontier])
@@ -106,8 +112,6 @@ class frontier:
         #     x_vals = [cell[0] for cell in best_group]
         #     y_vals = [cell[1] for cell in best_group]
         #     best_vp = np.array([int(sum(x_vals)/len(x_vals)), int(sum(y_vals)/len(y_vals))])
-            # for cell in best_group
-        print(f'Viewpoint selected at {best_vp}')
         return best_vp, best_group, frontiers
         
 test=False
