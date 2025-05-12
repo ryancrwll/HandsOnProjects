@@ -39,7 +39,7 @@ class DWA:
         # Current Velocity np.array([0.7, 0.1, 0.4, 2.3])
         self.current_velocity = [0.0, 0.0]  
         # DWA weights for tuning dyanmic window (heading, clearance, velocity, distance to goal) 
-        self.weights = np.array([0.5, 0.5, 0.6, 1.3]) # np.arraynp.array([0.7, 0.1, 0.4, 2.3]) weights for tuning dyanmic window (heading, clearance, velocity, distance to goal)
+        self.weights = np.array([0.5, 0.5, 0.6, 1.3]) # overriden in control loop
         self.old_weights = self.weights
         # First velocity always opposite #TODO figure out!
         self.control_iteration = 0
@@ -74,24 +74,23 @@ class DWA:
         rospy.Timer(rospy.Duration(0.2), self.controller)
 
     def heading_diff_calc(self, position, desired):
-        rospy.logerr_throttle(1.0, f'desired: {np.degrees(desired)}')
         rospy.logerr_throttle(1.0, f'heading: {np.degrees(position[2])}')
 
         vector = desired - position[:2]
         angle_needed = np.arctan2(vector[1], vector[0])
-        return wrap_angle(angle_needed - position[2])
+        return wrap_angle(angle_needed - position[2]), np.linalg.norm(vector)
         
     
     # Odometry callback: Gets current robot pose and stores it into self.current_pose
     def get_odom(self, odom):
-            _, _, yaw = tf.transformations.euler_from_quaternion([odom.pose.pose.orientation.x, 
-                                                                odom.pose.pose.orientation.y,
-                                                                odom.pose.pose.orientation.z,
-                                                                odom.pose.pose.orientation.w])
-            # Store current position (x, y, yaw) as a np.array in self.current_pose var.
-            self.current_pose = np.array([odom.pose.pose.position.x, odom.pose.pose.position.y, yaw])
-            self.good_pose = rospy.Time.now().to_sec() - self.last_odom_time < 0.2
-            self.last_odom_time = rospy.Time.now().to_sec()
+        _, _, yaw = tf.transformations.euler_from_quaternion([odom.pose.pose.orientation.x, 
+                                                            odom.pose.pose.orientation.y,
+                                                            odom.pose.pose.orientation.z,
+                                                            odom.pose.pose.orientation.w])
+        # Store current position (x, y, yaw) as a np.array in self.current_pose var.
+        self.current_pose = np.array([odom.pose.pose.position.x, odom.pose.pose.position.y, yaw])
+        self.good_pose = rospy.Time.now().to_sec() - self.last_odom_time < 0.2
+        self.last_odom_time = rospy.Time.now().to_sec()
                 
     def get_path(self, msg):
         # Pass numpy array of path from frontier_dwa.py
@@ -115,7 +114,7 @@ class DWA:
         if not hasattr(self.current_pose, '__len__'):
             return
         
-        clearance = 0
+        clearance = 0 # use covariance max axis here
         self.obstacles = []
         robx, roby, heading = self.current_pose
 
@@ -183,10 +182,7 @@ class DWA:
 
     def calc_scoring_vals(self, path):
         end_pose = path[-1, :]
-        vector = self.waypoint - end_pose[:2]
-        dist2goal = np.linalg.norm(vector)
-        angle_needed = np.arctan2(vector[1], vector[0])
-        heading_diff = wrap_angle(angle_needed - end_pose[2])
+        heading_diff, dist2goal = self.heading_diff_calc(end_pose,self.waypoint)
 
         d_score = -dist2goal
         
@@ -279,14 +275,13 @@ class DWA:
     def control_loop(self):
         '''executes main loop for following path'''
         if self.planning:
-            rospy.logwarn_throttle(1.0, 'Still planning but moving to viewpoint found in meantime')
+            rospy.logwarn_throttle(1.0, 'Still planning but spinning in meantime')
             # self.weights = np.array([0.7, 1.0, 1.4, 0.0])
-            self.__send_commnd__(0,0.3)
+            self.__send_commnd__(0,0.1)
             return
         else:
             self.weights = np.array([0.7, 0.1, 0.4, 2.3])
-            self.heading_diff = self.heading_diff_calc(self.current_pose[:3], self.waypoint)
-            rospy.logerr_throttle(1.0, f'heading diff: {np.degrees(self.heading_diff)}')
+            self.heading_diff, _ = self.heading_diff_calc(self.current_pose[:3], self.waypoint)
             
             if self.heading_diff < -np.pi/4:
                 rospy.logwarn_throttle(2.0, 'Adjusting heading to align robot with goal.')
