@@ -88,6 +88,7 @@ class DWA:
                                                             odom.pose.pose.orientation.z,
                                                             odom.pose.pose.orientation.w])
         # Store current position (x, y, yaw) as a np.array in self.current_pose var.
+        yaw = wrap_angle(yaw)
         self.current_pose = np.array([odom.pose.pose.position.x, odom.pose.pose.position.y, yaw])
         self.good_pose = rospy.Time.now().to_sec() - self.last_odom_time < 0.2
         self.last_odom_time = rospy.Time.now().to_sec()
