@@ -1,0 +1,20 @@
+<launch>
+
+    <!-- Global frame parameter -->
+    <param name="~frame_id" type="string" value="odom" />
+    
+    <!-- Launch the TurtleBot simulator along with stonefish -->
+    <!-- <include file="$(find turtlebot_simulation)/launch/turtlebot_hol_circuit2_aruco.launch" /> -->
+
+    <!-- Run dead reckoning node (Python script) -->
+    <node pkg="aruco_slam_HOP" type="deadReckoning_node.py" name="dead_reckoning_node" output="screen">
+        <param name="use_sim_time" value="true" />
+    </node>
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_odom_to_world" args="3.0 -0.78 0 0 0 0.7071 0.7071 odom odom" />
+
+    <node pkg="aruco_slam_HOP" type="cameraPose.py" name="aruco_detector" output="screen">
+        <param name="use_sim_time" value="true" />
+    </node>
+
+</launch>
