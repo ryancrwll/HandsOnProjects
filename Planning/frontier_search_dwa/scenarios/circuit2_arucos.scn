@@ -1,0 +1,396 @@
+<?xml version="1.0"?>
+<scenario>
+	<looks>
+		<look name="ovning" gray="1.0" roughness="1.0" texture="textures/ovning.jpg" />
+		<look name="aruco1" gray="1.0" roughness="1.0" texture="textures/aruco_original1.png" />
+		<look name="aruco11" gray="1.0" roughness="1.0" texture="textures/aruco_original11.png" />
+		<look name="aruco21" gray="1.0" roughness="1.0" texture="textures/aruco_original21.png" />
+		<look name="aruco31" gray="1.0" roughness="1.0" texture="textures/aruco_original31.png" />
+		<look name="aruco41" gray="1.0" roughness="1.0" texture="textures/aruco_original41.png" />
+		<look name="aruco51" gray="1.0" roughness="1.0" texture="textures/aruco_original51.png" />
+		<look name="aruco61" gray="1.0" roughness="1.0" texture="textures/aruco_original61.png" />
+		<look name="aruco71" gray="1.0" roughness="1.0" texture="textures/aruco_original71.png" />
+		<look name="aruco81" gray="1.0" roughness="1.0" texture="textures/aruco_original81.png" />
+		<look name="aruco91" gray="1.0" roughness="1.0" texture="textures/aruco_original91.png" />
+	</looks>
+
+	<static name="P1" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner2_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner2.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+	</static>
+
+	<static name="P2" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_knee2_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_knee2.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${pi}" xyz="0.275 1.478 0.0" />
+	</static>
+
+	<static name="P3" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner2_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner2.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${-pi/2.0}" xyz="0.482 2.872 0.0" />
+	</static>
+
+	<static name="P4" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_straight_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_straight.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${pi}" xyz="1.095 1.6 0.0" />
+	</static>
+
+	<static name="P5" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${pi}" xyz="2.0 1.2 0.0" />
+	</static>
+
+	<static name="P6" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner2_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner2.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${-pi/2.0}" xyz="2.2 3.6 0.0" />
+	</static>
+
+	<static name="P7" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_triangle_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_triangle.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 0.0" xyz="2.709 2.5 0.0" />
+	</static>
+
+	<static name="P8" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_knee_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_knee.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${pi}" xyz="3.7 3.132 0.0" />
+	</static>
+
+	<static name="P9" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_triangle_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_triangle.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 0.0" xyz="4.25 1.755 0.0" />
+	</static>
+
+	<static name="P10" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner2_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner2.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${pi}" xyz="5.2 2.79 0.0" />
+	</static>
+
+	<static name="P11" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_straight_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_straight.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${pi}" xyz="5.2 1.195 0.0" />
+	</static>
+
+	<static name="P12" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${pi}" xyz="4.0 0.4 0.0" />
+	</static>
+
+	<static name="P13" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_knee2_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_knee2.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${-pi/2.0}" xyz="5.12 0.198 0.0" />
+	</static>
+
+	<static name="P14" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_straight_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_straight.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${pi}" xyz="5.6 -1.1 0.0" />
+	</static>
+
+	<static name="P15" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_straight_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_straight.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${pi/2.0}" xyz="4.596 -1.7 0.0" />
+	</static>
+
+	<static name="P16" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_corner.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${pi}" xyz="3.6 -1.06 0.0" />
+	</static>
+
+	<static name="P17" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_knee_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_knee.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 0.0" xyz="2.4 -0.79 0.0" />
+	</static>
+
+	<static name="P18" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_straight_phy.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/ovning_straight.obj"
+				scale="1.0" />
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0" />
+		</visual>
+		<material name="Plastic" />
+		<mass value="0.5" />
+		<look name="ovning" />
+		<world_transform rpy="0.0 0.0 ${pi/2.0}" xyz="1.39 -0.205 0.0" />
+	</static>
+
+	<static name="aruco1" type="box">
+		<dimensions xyz="0.1875 0.1875 0.001" />
+		<origin rpy="${pi/2} 0.0 0.0" xyz="0.0 0.0 0.0" />
+		<material name="Plastic" />
+		<look name="aruco1" uv_mode="3" />
+		<world_transform rpy="0.0 0.0 0.0" xyz="1.4 -0.2 -0.15" />
+	</static>
+
+	<static name="aruco2" type="box">
+		<dimensions xyz="0.1875 0.1875 0.001" />
+		<origin rpy="${pi/2} 0.0 0.0" xyz="0.0 0.0 0.0" />
+		<material name="Plastic" />
+		<look name="aruco11" uv_mode="3" />
+		<world_transform rpy="0.0 0.0 ${pi/2}" xyz="3.99 0.605 -0.15" />
+	</static>
+
+	<static name="aruco3" type="box">
+		<dimensions xyz="0.1875 0.1875 0.001" />
+		<origin rpy="${pi/2} 0.0 0.0" xyz="0.0 0.0 0.0" />
+		<material name="Plastic" />
+		<look name="aruco21" uv_mode="3" />
+		<world_transform rpy="0.0 0.0 ${-pi/2}" xyz="2.715 2.5 -0.15" />
+	</static>
+
+	<static name="aruco4" type="box">
+		<dimensions xyz="0.1875 0.1875 0.001" />
+		<origin rpy="${pi/2} 0.0 0.0" xyz="0.0 0.0 0.0" />
+		<material name="Plastic" />
+		<look name="aruco31" uv_mode="3" />
+		<world_transform rpy="0.0 0.0 ${5*pi/6}" xyz="2.535 2.39 -0.15" />
+	</static>
+
+	<static name="aruco5" type="box">
+		<dimensions xyz="0.1875 0.1875 0.001" />
+		<origin rpy="${pi/2} 0.0 0.0" xyz="0.0 0.0 0.0" />
+		<material name="Plastic" />
+		<look name="aruco41" uv_mode="3" />
+		<world_transform rpy="0.0 0.0 ${-pi/2}" xyz="2.01 1.2 -0.15" />
+	</static>
+
+	<static name="aruco6" type="box">
+		<dimensions xyz="0.1875 0.1875 0.001" />
+		<origin rpy="${pi/2} 0.0 0.0" xyz="0.0 0.0 0.0" />
+		<material name="Plastic" />
+		<look name="aruco51" uv_mode="3" />
+		<world_transform rpy="0.0 0.0 ${pi/2}" xyz="1.99 1.2 -0.15" />
+	</static>
+
+	<static name="aruco7" type="box">
+		<dimensions xyz="0.1875 0.1875 0.001" />
+		<origin rpy="${pi/2} 0.0 0.0" xyz="0.0 0.0 0.0" />
+		<material name="Plastic" />
+		<look name="aruco61" uv_mode="3" />
+		<world_transform rpy="0.0 0.0 0.0" xyz="4.57 -1.69 -0.15" />
+	</static>
+
+	<static name="aruco8" type="box">
+		<dimensions xyz="0.1875 0.1875 0.001" />
+		<origin rpy="${pi/2} 0.0 0.0" xyz="0.0 0.0 0.0" />
+		<material name="Plastic" />
+		<look name="aruco71" uv_mode="3" />
+		<world_transform rpy="0.0 0.0 ${-pi/2}" xyz="0.283 1.70 -0.15" />
+	</static>
+
+	<static name="aruco9" type="box">
+		<dimensions xyz="0.1875 0.1875 0.001" />
+		<origin rpy="${pi/2} 0.0 0.0" xyz="0.0 0.0 0.0" />
+		<material name="Plastic" />
+		<look name="aruco81" uv_mode="3" />
+		<world_transform rpy="0.0 0.0 ${pi}" xyz="0.80 2.86 -0.15" />
+	</static>
+
+	
+</scenario>

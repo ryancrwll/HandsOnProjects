@@ -57,9 +57,37 @@
 		<world_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
 	</static>
 
+	<static name="Wall1" type="box">
+		<dimensions xyz="8.0 0.1 1.0"/>
+		<material name="Neutral"/>
+		<look name="white"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="3.0 -2.5 -0.5"/>
+	</static>
+
+	<static name="Wall2" type="box">
+		<dimensions xyz="8.0 0.1 1.0"/>
+		<material name="Neutral"/>
+		<look name="white"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="3.0 4.5 -0.5"/>
+	</static>
+
+	<static name="Wall3" type="box">
+		<dimensions xyz="7.1 0.1 1.0"/>
+		<material name="Neutral"/>
+		<look name="white"/>
+		<world_transform rpy="0.0 0.0 ${pi/2.0}" xyz="-0.95 1.0 -0.5"/>
+	</static>
+
+	<static name="Wall4" type="box">
+		<dimensions xyz="7.1 0.1 1.0"/>
+		<material name="Neutral"/>
+		<look name="white"/>
+		<world_transform rpy="0.0 0.0 ${pi/2.0}" xyz="6.95 1.0 -0.5"/>
+	</static>
+	
 	<include file="$(find frontier_search_dwa)/scenarios/circuit2_arucos.scn"/>
 
-    <include file="$(find frontier_search_dwa)/scenarios/kobuki_lidar_range_3.scn">
+    <include file="$(find frontier_search_dwa)/scenarios/kobuki_lidar_range_12.scn">
 		<arg name="robot_name" value="$(param robot_name)"/>
 		<arg name="start_position" value="3.0 -0.78 -0.2"/>
 		<arg name="start_yaw" value="${pi/2.0}"/>		

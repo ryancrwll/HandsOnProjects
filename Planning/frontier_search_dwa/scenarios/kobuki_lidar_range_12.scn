@@ -1,0 +1,183 @@
+<?xml version="1.0"?>
+<scenario>
+	<looks>
+		<look name="black_plastic" gray="0.05" roughness="0.5"/>
+		<look name="silver_plastic" gray="0.7" roughness="0.1" metalness="0.5"/>
+		<look name="silver_anode" rgb="0.8 0.8 0.85" roughness="0.5" metalness="1.0"/>
+		<look name="rubber" gray="0.05" roughness="1.0"/>
+	</looks>
+
+	<robot name="$(arg robot_name)" fixed="false" self_collisions="false" algorithm="featherstone">
+		<base_link name="Base" type="compound" physics="surface">
+			<external_part name="MainBody" type="model" physics="surface">
+				<physical>
+					<mesh filename="$(find kobuki_description)/resources/meshes/main_body_phy.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</physical>
+				<visual>
+					<mesh filename="$(find kobuki_description)/resources/meshes/main_body.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</visual>
+				<material name="Plastic"/>
+				<mass value="2.0"/>
+				<look name="black_plastic"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="CasterFront" type="sphere" physics="surface">
+				<dimensions radius="0.0165"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.1122 0.0 0.18138"/>
+				<material name="Caster"/>
+				<look name="black_plastic"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+			
+			<external_part name="CasterBack" type="sphere" physics="surface">
+				<dimensions radius="0.0165"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.138 0.0 0.18138"/>
+				<material name="Caster"/>
+				<look name="black_plastic"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="PlateBottom" type="model" physics="surface">
+				<physical>
+					<mesh filename="$(find kobuki_description)/resources/meshes/plate_bottom_phy.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</physical>
+				<visual>
+					<mesh filename="$(find kobuki_description)/resources/meshes/plate_bottom.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</visual>
+				<material name="Plastic"/>
+				<mass value="0.5"/>
+				<look name="black_plastic"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="PlateMiddle" type="model" physics="surface">
+				<physical>
+					<mesh filename="$(find kobuki_description)/resources/meshes/plate_middle_phy.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</physical>
+				<visual>
+					<mesh filename="$(find kobuki_description)/resources/meshes/plate_middle.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</visual>
+				<material name="Plastic"/>
+				<look name="black_plastic"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="PillarLF" type="cylinder" physics="surface">
+				<dimensions radius="0.006" height="0.05"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.105 -0.099 0.031"/>
+				<material name="Aluminium"/>
+				<look name="silver_anode"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="PillarRF" type="cylinder" physics="surface">
+				<dimensions radius="0.006" height="0.05"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.105 0.099 0.031"/>
+				<material name="Aluminium"/>
+				<look name="silver_anode"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="PillarLB" type="cylinder" physics="surface">
+				<dimensions radius="0.006" height="0.05"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.109 -0.099 0.031"/>
+				<material name="Aluminium"/>
+				<look name="silver_anode"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="PillarRB" type="cylinder" physics="surface">
+				<dimensions radius="0.006" height="0.05"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.109 0.099 0.031"/>
+				<material name="Aluminium"/>
+				<look name="silver_anode"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+		</base_link>
+
+		<link name="WheelL" type="cylinder" physics="surface">
+			<dimensions radius="0.035" height="0.02"/>
+    		<origin rpy="${pi/2.0} 0.0 0.0" xyz="0.0 0.0 0.0"/>
+    		<material name="Rubber1"/>
+    		<look name="rubber"/>
+		</link>
+
+		<link name="WheelR" type="cylinder" physics="surface">
+			<dimensions radius="0.035" height="0.02"/>
+    		<origin rpy="${pi/2.0} 0.0 0.0" xyz="0.0 0.0 0.0"/>
+    		<material name="Rubber2"/>
+    		<look name="rubber"/>
+		</link>
+
+		<joint name="wheel_left_joint" type="revolute">
+			<parent name="Base"/>
+			<child name="WheelL"/>
+			<origin rpy="0.0 0.0 ${pi}" xyz="0.0 -0.115 0.16307"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="wheel_right_joint" type="revolute">
+			<parent name="Base"/>
+			<child name="WheelR"/>
+			<origin rpy="0.0 0.0 ${pi}" xyz="0.0 0.115 0.16307"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<actuator name="wheel_servo_left" type="servo">
+			<joint name="wheel_left_joint"/>
+			<controller position_gain="1.0" velocity_gain="1.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="wheel_servo_right" type="servo">
+			<joint name="wheel_right_joint"/>
+			<controller position_gain="1.0" velocity_gain="1.0" max_torque="1000.0"/>
+		</actuator>
+
+		<sensor name="wheel_encoder_left" rate="100.0" type="encoder">
+			<joint name="wheel_left_joint"/>
+			<ros_publisher topic="/$(arg robot_name)/joint_states" />
+		</sensor>
+
+		<sensor name="wheel_encoder_right" rate="100.0" type="encoder">
+			<joint name="wheel_right_joint"/>
+			<ros_publisher topic="/$(arg robot_name)/joint_states" />
+		</sensor>
+
+		<sensor name="odometry" rate="100.0" type="odometry">
+			<noise position="0.00" velocity="0.00" angle="0.0" angular_velocity="0.0"/>
+			<history samples="1"/>
+			<origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
+			<link name="Base"/>
+			<ros_publisher topic="/$(arg robot_name)/odom_ground_truth"/>
+		</sensor>
+
+		<sensor name="imu" rate="10.0" type="imu">
+			<range angular_velocity="10.0 10.0 10.0" linear_acceleration="10.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			<link name="Base"/>
+			<ros_publisher topic="/$(arg robot_name)/kobuki/sensors/imu_data"/>
+		</sensor>
+
+		<sensor name="rplidar" rate="5.0" type="multibeam">
+			<specs fov="360.0" steps="800"/>
+			<range distance_min="0.2" distance_max="12.0"/>
+			<origin xyz="-0.02 0.0 0.0189" rpy="0.0 0.0 0.0"/>
+			<link name="Base"/>
+			<ros_publisher topic="/$(arg robot_name)/kobuki/sensors/rplidar"/>
+		</sensor>
+
+		<ros_joint_group_subscriber topic="/$(arg robot_name)/kobuki/commands/wheel_velocities" control_mode="velocity">
+			<joint name="wheel_left_joint"/>
+			<joint name="wheel_right_joint"/>
+		</ros_joint_group_subscriber>
+
+		<world_transform rpy="0.0 0.0 $(arg start_yaw)" xyz="$(arg start_position)"/>
+	</robot>
+</scenario>

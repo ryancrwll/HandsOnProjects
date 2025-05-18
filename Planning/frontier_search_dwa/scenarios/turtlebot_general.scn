@@ -1,0 +1,495 @@
+<?xml version="1.0"?>
+<scenario>
+	<looks>
+		<look name="black_plastic" gray="0.05" roughness="0.5"/>
+		<look name="silver_plastic" gray="0.7" roughness="0.1" metalness="0.5"/>
+		<look name="silver_anode" rgb="0.8 0.8 0.85" roughness="0.5" metalness="1.0"/>
+		<look name="black_anodized" gray="0.05" roughness="0.4" metalness="1.0"/>
+		<look name="rubber" gray="0.05" roughness="1.0"/>
+		<look name="suction_cup" gray="0.90" roughness="0.5" metalness="0.0"/>
+	</looks>
+
+	<robot name="$(arg robot_name)" fixed="false" self_collisions="false" algorithm="general">
+		<base_link name="Base" type="compound" physics="surface">
+			<external_part name="MainBody" type="model" physics="surface">
+				<physical>
+					<mesh filename="$(find kobuki_description)/resources/meshes/main_body_phy.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</physical>
+				<visual>
+					<mesh filename="$(find kobuki_description)/resources/meshes/main_body.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</visual>
+				<material name="Plastic"/>
+				<mass value="2.0"/>
+				<look name="black_plastic"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="CasterFront" type="sphere" physics="surface">
+				<dimensions radius="0.0165"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.1122 0.0 0.18138"/>
+				<material name="Caster"/>
+				<look name="black_plastic"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+			
+			<external_part name="CasterBack" type="sphere" physics="surface">
+				<dimensions radius="0.0165"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.138 0.0 0.18138"/>
+				<material name="Caster"/>
+				<look name="black_plastic"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="PlateBottom" type="model" physics="surface">
+				<physical>
+					<mesh filename="$(find kobuki_description)/resources/meshes/plate_bottom_phy.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</physical>
+				<visual>
+					<mesh filename="$(find kobuki_description)/resources/meshes/plate_bottom.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</visual>
+				<material name="Plastic"/>
+				<mass value="0.5"/>
+				<look name="black_plastic"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="PlateMiddle" type="model" physics="surface">
+				<physical>
+					<mesh filename="$(find kobuki_description)/resources/meshes/plate_middle_phy.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</physical>
+				<visual>
+					<mesh filename="$(find kobuki_description)/resources/meshes/plate_middle.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</visual>
+				<material name="Plastic"/>
+				<look name="black_plastic"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="PillarLF" type="cylinder" physics="surface">
+				<dimensions radius="0.006" height="0.05"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.105 -0.099 0.031"/>
+				<material name="Aluminium"/>
+				<look name="silver_anode"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="PillarRF" type="cylinder" physics="surface">
+				<dimensions radius="0.006" height="0.05"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.105 0.099 0.031"/>
+				<material name="Aluminium"/>
+				<look name="silver_anode"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="PillarLB" type="cylinder" physics="surface">
+				<dimensions radius="0.006" height="0.05"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.109 -0.099 0.031"/>
+				<material name="Aluminium"/>
+				<look name="silver_anode"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="PillarRB" type="cylinder" physics="surface">
+				<dimensions radius="0.006" height="0.05"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.109 0.099 0.031"/>
+				<material name="Aluminium"/>
+				<look name="silver_anode"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+
+			<external_part name="ManipulatorBase" type="model" physics="surface">
+				<physical>
+					<mesh filename="$(find swiftpro_description)/resources/meshes/base_phy.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</physical>
+				<visual>
+					<mesh filename="$(find swiftpro_description)/resources/meshes/base.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+				</visual>
+				<material name="Aluminium"/>
+				<mass value="1.0"/>
+				<look name="black_anodized"/>
+				<compound_transform rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</external_part>
+		</base_link>
+
+		<link name="WheelL" type="cylinder" physics="surface">
+			<dimensions radius="0.035" height="0.02"/>
+    		<origin rpy="${pi/2.0} 0.0 0.0" xyz="0.0 -0.115 0.16307"/>
+    		<material name="Rubber1"/>
+    		<look name="rubber"/>
+		</link>
+
+		<link name="WheelR" type="cylinder" physics="surface">
+			<dimensions radius="0.035" height="0.02"/>
+    		<origin rpy="${pi/2.0} 0.0 0.0" xyz="0.0 0.115 0.16307"/>
+    		<material name="Rubber2"/>
+    		<look name="rubber"/>
+		</link>
+
+		<link name="Link1" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link1_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link1.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</visual>
+			<material name="Aluminium"/>
+			<mass value="1.0"/>
+			<look name="black_anodized"/>
+		</link>
+	
+		<link name="Link2" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link2_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link2.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link3" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link3_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link3.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link4" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link4_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link4.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link5" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link5_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link5.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link6" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link6_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link6.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link7" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link7_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link7.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link8a" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link8a_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link8a.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</visual>
+			<material name="Aluminium"/>
+			<mass value="0.025"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link8b" type="compound" physics="surface">
+			<external_part name="Link8bValve" type="model" physics="surface">
+				<physical>
+					<mesh filename="$(find swiftpro_description)/resources/meshes/link8b_phy.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+				</physical>
+				<visual>
+					<mesh filename="$(find swiftpro_description)/resources/meshes/link8b.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+				</visual>
+				<material name="Aluminium"/>
+				<mass value="0.015"/>
+				<look name="black_anodized"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+			<external_part name="Link8bCup" type="model" physics="surface">
+				<physical>
+					<mesh filename="$(find swiftpro_description)/resources/meshes/link8bcup_phy.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+				</physical>
+				<visual>
+					<mesh filename="$(find swiftpro_description)/resources/meshes/link8bcup.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+				</visual>
+				<material name="Aluminium"/>
+				<mass value="0.005"/>
+				<look name="suction_cup"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+			<contact stiffness="100000.0" damping="0.5"/>
+		</link>
+	
+		<link name="Link9" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link9_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link9.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<joint name="kobuki/wheel_left_joint" type="revolute">
+			<parent name="Base"/>
+			<child name="WheelL"/>
+			<origin rpy="0.0 0.0 ${pi}" xyz="0.0 -0.115 0.16307"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="kobuki/wheel_right_joint" type="revolute">
+			<parent name="Base"/>
+			<child name="WheelR"/>
+			<origin rpy="0.0 0.0 ${pi}" xyz="0.0 0.115 0.16307"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="swiftpro/joint1" type="revolute">
+			<parent name="Base"/>
+			<child name="Link1"/>
+			<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="$(arg arm_x) $(arg arm_y) $(arg arm_z)"/>
+			<axis xyz="0.0 0.0 1.0"/>
+			<limits min="${-pi/2.0}" max="${pi/2.0}"/>
+		</joint>
+
+		<joint name="swiftpro/joint2" type="revolute">
+			<parent name="Link1"/>
+			<child name="Link2"/>
+			<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="${$(arg arm_x) + cos($(arg arm_yaw))*0.0133} ${$(arg arm_y) + sin($(arg arm_yaw))*0.0133} ${$(arg arm_z)-0.1056}"/>
+			<axis xyz="0.0 1.0 0.0"/>
+			<limits min="${-pi/2.0}" max="0.05"/>
+		</joint>
+
+		<joint name="swifpro/passive_joint1" type="revolute">
+			<parent name="Link2"/>
+			<child name="Link3"/>
+			<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="${$(arg arm_x) + cos($(arg arm_yaw))*0.0133} ${$(arg arm_y) + sin($(arg arm_yaw))*0.0133} ${$(arg arm_z)-0.2476}"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="swifpro/passive_joint2" type="revolute">
+			<parent name="Link2"/>
+			<child name="Link4"/>
+			<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="${$(arg arm_x) + cos($(arg arm_yaw))*0.0133} ${$(arg arm_y) + sin($(arg arm_yaw))*0.0133} ${$(arg arm_z)-0.2476}"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="swifpro/passive_joint3" type="revolute">
+			<parent name="Link1"/>
+			<child name="Link5"/>
+			<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="${$(arg arm_x) + cos($(arg arm_yaw))*-0.0214} ${$(arg arm_y) + sin($(arg arm_yaw))*-0.0214} ${$(arg arm_z)-0.1223}"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="swifpro/passive_joint4" type="revolute">
+			<parent name="Link4"/>
+			<child name="Link5"/>
+			<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="${$(arg arm_x) + cos($(arg arm_yaw))*-0.0214} ${$(arg arm_y) + sin($(arg arm_yaw))*-0.0214} ${$(arg arm_z)-0.2643}"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="swiftpro/joint3" type="revolute">
+			<parent name="Link1"/>
+			<child name="Link6"/>
+			<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="${$(arg arm_x) + cos($(arg arm_yaw))*0.0133} ${$(arg arm_y) + sin($(arg arm_yaw))*0.0133} ${$(arg arm_z)-0.1056}"/>
+			<axis xyz="0.0 1.0 0.0"/>
+			<limits min="${-pi/2.0}" max="0.05"/>
+		</joint>
+
+		<joint name="swifpro/passive_joint5" type="revolute">
+			<parent name="Link6"/>
+			<child name="Link7"/>
+			<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="${$(arg arm_x) + cos($(arg arm_yaw))*-0.0322} ${$(arg arm_y) + sin($(arg arm_yaw))*-0.0322} ${$(arg arm_z)-0.1026}"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="swifpro/passive_joint6" type="revolute">
+			<parent name="Link3"/>
+			<child name="Link7"/>
+			<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="${$(arg arm_x) + cos($(arg arm_yaw))*-0.0322} ${$(arg arm_y) + sin($(arg arm_yaw))*-0.0322} ${$(arg arm_z)-0.2446}"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="swifpro/passive_joint7" type="revolute">
+			<parent name="Link3"/>
+			<child name="Link8a"/>
+			<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="${$(arg arm_x) + cos($(arg arm_yaw))*0.172} ${$(arg arm_y) + sin($(arg arm_yaw))*0.172} ${$(arg arm_z)-0.2476}"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>		
+
+		<joint name="swifpro/passive_joint8" type="revolute">
+			<parent name="Link8a"/>
+			<child name="Link9"/>
+			<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="${$(arg arm_x) + cos($(arg arm_yaw))*0.1994} ${$(arg arm_y) + sin($(arg arm_yaw))*0.1994} ${$(arg arm_z)-0.2746}"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="swifpro/passive_joint9" type="revolute">
+			<parent name="Link4"/>
+			<child name="Link9"/>
+			<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="${$(arg arm_x) + cos($(arg arm_yaw))*0.0407} ${$(arg arm_y) + sin($(arg arm_yaw))*0.0407} ${$(arg arm_z)-0.2746}"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="swiftpro/joint4" type="revolute">
+			<parent name="Link8a"/>
+			<child name="Link8b"/>
+			<origin rpy="0.0 0.0 $(arg arm_yaw)" xyz="${$(arg arm_x) + cos($(arg arm_yaw))*0.2285} ${$(arg arm_y) + sin($(arg arm_yaw))*0.2285} ${$(arg arm_z)-0.2476}"/>
+			<axis xyz="0.0 0.0 1.0"/>
+			<limits min="${-pi/2.0}" max="${pi/2.0}"/>
+		</joint>
+
+		<actuator name="kobuki/wheel_servo_left" type="servo">
+			<joint name="kobuki/wheel_left_joint"/>
+			<controller position_gain="10.0" velocity_gain="0.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="kobuki/wheel_servo_right" type="servo">
+			<joint name="kobuki/wheel_right_joint"/>
+			<controller position_gain="10.0" velocity_gain="0.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="swiftpro/servo1" type="servo">
+			<joint name="swiftpro/joint1"/>
+			<controller position_gain="10.0" velocity_gain="0.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="swiftpro/servo2" type="servo">
+			<joint name="swiftpro/joint2"/>
+			<controller position_gain="10.0" velocity_gain="0.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="swiftpro/servo3" type="servo">
+			<joint name="swiftpro/joint3"/>
+			<controller position_gain="10.0" velocity_gain="0.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="swiftpro/servo4" type="servo">
+			<joint name="swiftpro/joint4"/>
+			<controller position_gain="10.0" velocity_gain="0.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="swiftpro/suction_cup" type="suction_cup">
+			<link name="Link8b"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			<ros_publisher topic="/$(arg robot_name)/swiftpro/vacuum_gripper/pump_state"/>
+			<ros_service topic="/$(arg robot_name)/swiftpro/vacuum_gripper/set_pump"/>
+		</actuator>
+
+		<sensor name="kobuki/wheel_encoder_left" rate="100.0" type="encoder">
+			<joint name="kobuki/wheel_left_joint"/>
+			<ros_publisher topic="/$(arg robot_name)/joint_states" />
+		</sensor>
+
+		<sensor name="kobuki/wheel_encoder_right" rate="100.0" type="encoder">
+			<joint name="kobuki/wheel_right_joint"/>
+			<ros_publisher topic="/$(arg robot_name)/joint_states" />
+		</sensor>
+
+		<sensor name="kobuki/imu" rate="10.0" type="imu">
+			<range angular_velocity="10.0 10.0 10.0" linear_acceleration="10.0"/>
+			<origin rpy="${pi} 0.0 0.0" xyz="0.056 0.062 0.163"/>
+			<link name="Base"/>
+			<ros_publisher topic="/$(arg robot_name)/kobuki/sensors/imu_data"/>
+		</sensor>
+
+		<sensor name="kobuki/rplidar" rate="5.0" type="multibeam">
+			<specs fov="360.0" steps="800"/>
+			<range distance_min="0.2" distance_max="12.0"/>
+			<origin xyz="-0.02 0.0 0.0189" rpy="0.0 0.0 0.0"/>
+			<link name="Base"/>
+			<ros_publisher topic="/$(arg robot_name)/kobuki/sensors/rplidar"/>
+		</sensor>
+
+		<sensor name="kobuki/realsense_color" rate="30.0" type="camera">
+			<specs resolution_x="1920" resolution_y="1080" horizontal_fov="69.0"/>
+			<visual filename="$(find kobuki_description)/resources/meshes/realsense.obj" scale="1.0" look="silver_plastic"/>
+			<origin xyz="0.122 -0.033 0.082" rpy="${pi/2.0} 0.0 ${pi/2.0}"/>
+			<link name="Base"/>
+			<ros_publisher topic="/$(arg robot_name)/kobuki/realsense/color"/>
+		</sensor>
+
+		<sensor name="kobuki/realsense_depth" rate="30.0" type="depthcamera">
+			<specs resolution_x="1280" resolution_y="720" horizontal_fov="87.0" depth_min="0.28" depth_max="10.0"/>
+			<origin xyz="0.122 -0.018 0.082" rpy="${pi/2.0} 0.0 ${pi/2.0}"/>
+			<link name="Base"/>
+			<ros_publisher topic="/$(arg robot_name)/kobuki/realsense/depth"/>
+		</sensor>
+
+		<sensor name="kobuki/odometry" rate="100.0" type="odometry">
+			<noise position="0.00" velocity="0.00" angle="0.0" angular_velocity="0.0"/>
+			<history samples="1"/>
+			<origin xyz="0.0 0.0 -0.2" rpy="0.0 0.0 0.0"/>
+			<link name="Base"/>
+			<ros_publisher topic="/$(arg robot_name)/kobuki/odom_ground_truth"/>
+		</sensor>
+		
+		<ros_joint_group_subscriber topic="/$(arg robot_name)/kobuki/commands/wheel_velocities" control_mode="velocity">
+			<joint name="kobuki/wheel_left_joint"/>
+			<joint name="kobuki/wheel_right_joint"/>
+		</ros_joint_group_subscriber>
+	
+		<ros_control_interface namespace="/$(arg robot_name)/swiftpro" type="velocity">
+			<joint name="swiftpro/joint1"/>
+			<joint name="swiftpro/joint2"/>
+			<joint name="swiftpro/joint3"/>
+			<joint name="swiftpro/joint4"/>
+		</ros_control_interface>
+		
+		<world_transform rpy="0.0 0.0 $(arg start_yaw)" xyz="$(arg start_position)"/>
+	</robot>
+</scenario>

@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+from turtle import distance
 import numpy as np
 from online_planning import StateValidityChecker
 
@@ -7,7 +8,7 @@ class frontier:
     def __init__(self, descritized_map, current_pose, vpDist_w, fSize_w, search_center=None, search_distance=None):
         self.map = descritized_map.T
         self.visited = set()    #used for bfs
-        self.pose = current_pose
+        self.pose = current_pose # used so that the robot doesnt choose a group that is connected to it
         # area to search for frontiers
         self.search_center = search_center
         self.search_distance = search_distance
@@ -65,11 +66,11 @@ class frontier:
         for frontier in frontiers:
             if frontier not in self.visited:
                 group = self.breadth_first_search(frontier, frontiers)
-                if len(group) >2:
+                if len(group) > 2:
                     grouped_f.append(group)
         return grouped_f, frontiers
     
-    def choose_vp(self, travel_dist):
+    def choose_vp(self, travel_dist, ):
         grouped_f, frontiers = self.group_frontiers()
 
         group_dist = []
@@ -108,10 +109,10 @@ class frontier:
                 best_vp = ideal_vps[i]
                 best_group = groups[i]
         # finds cell closest to the center of the centroid of the group
-        # if best_vp is not None:
-        #     x_vals = [cell[0] for cell in best_group]
-        #     y_vals = [cell[1] for cell in best_group]
-        #     best_vp = np.array([int(sum(x_vals)/len(x_vals)), int(sum(y_vals)/len(y_vals))])
+        if best_vp is not None:
+            x_vals = [cell[0] for cell in best_group]
+            y_vals = [cell[1] for cell in best_group]
+            best_vp = np.array([int(sum(x_vals)/len(x_vals)), int(sum(y_vals)/len(y_vals))])
         return best_vp, best_group, frontiers
         
 test=False

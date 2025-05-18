@@ -3,14 +3,14 @@
 	<solver>
 		<erp value="0.5"/>
 		<stop_erp value="0.25"/>
-		<erp2 value="0.15"/>
+		<erp2 value="0.9"/>
 		<global_damping value="0.25"/>
 	</solver>
 
 	<environment>
 		<ned latitude="41.7777" longitude="3.0333"/>
 		<atmosphere>
-			<sun azimuth="47.0" elevation="70.0"/>
+			<sun azimuth="180.0" elevation="50.0"/>
 		</atmosphere>
 	</environment>
 
@@ -25,8 +25,8 @@
 			<friction material1="Concrete" material2="Concrete" static="0.9" dynamic="0.7"/>
 			<friction material1="Concrete" material2="Plastic" static="0.6" dynamic="0.4"/>
 			<friction material1="Concrete" material2="Aluminium" static="0.6" dynamic="0.3"/>
-			<friction material1="Concrete" material2="Rubber1" static="0.9" dynamic="0.8"/>
-			<friction material1="Concrete" material2="Rubber2" static="0.9" dynamic="0.8"/>
+			<friction material1="Concrete" material2="Rubber1" static="0.05" dynamic="0.02"/> <!-- Left wheel -->
+			<friction material1="Concrete" material2="Rubber2" static="0.05" dynamic="0.02"/> <!-- Right wheel -->
 			<friction material1="Concrete" material2="Caster" static="0.1" dynamic="0.05"/>
 			<friction material1="Plastic" material2="Plastic" static="0.5" dynamic="0.2"/>
 			<friction material1="Plastic" material2="Aluminium" static="0.3" dynamic="0.1"/>
@@ -48,7 +48,6 @@
 
 	<looks>
 		<look name="grid" gray="1.0" roughness="1.0" texture="textures/grid.png" />
-		<look name="aruco_box" gray="1.0" roughness="0.5" texture="textures/aruco_box.png"/>
 	</looks>
 
 	<static name="Ground" type="plane">
@@ -57,11 +56,40 @@
 		<world_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
 	</static>
 
-	<include file="$(find frontier_search_dwa)/scenarios/circuit2_arucos.scn"/>
-
-    <include file="$(find frontier_search_dwa)/scenarios/kobuki_lidar_range_3.scn">
+    <include file="$(find turtlebot_simulation)/scenarios/pr_kobuki.scn">
 		<arg name="robot_name" value="$(param robot_name)"/>
-		<arg name="start_position" value="3.0 -0.78 -0.2"/>
-		<arg name="start_yaw" value="${pi/2.0}"/>		
+		<arg name="start_position" value="0.0 0.0 -0.2"/>
+		<arg name="start_yaw" value="0.0"/>
 	</include>
+
+	<!-- <comm name="Modem1" device_id="1" type="acoustic_modem">
+		<specs min_vertical_fov="0.0" max_vertical_fov="220.0" range="1000.0"/>
+		<connect device_id="11" occlusion_test="false"/>
+		<world_transform xyz="0.0 0.0 -2.0" rpy="0.0 0.0 0.0"/>
+	</comm> -->
+
+	<comm name="Modem2" device_id="2" type="acoustic_modem">
+		<specs min_vertical_fov="0.0" max_vertical_fov="220.0" range="1000.0"/>
+		<connect device_id="1" occlusion_test="false"/>
+		<world_transform xyz="7.0 5.0 -2.0" rpy="0.0 0.0 0.0"/>
+	</comm>
+
+	<comm name="Modem3" device_id="3" type="acoustic_modem">
+		<specs min_vertical_fov="0.0" max_vertical_fov="220.0" range="1000.0"/>
+		<connect device_id="1" occlusion_test="false"/>
+		<world_transform xyz="-5.0 5.0 -2.0" rpy="0.0 0.0 0.0"/>
+	</comm>
+
+	<comm name="Modem4" device_id="4" type="acoustic_modem">
+		<specs min_vertical_fov="0.0" max_vertical_fov="220.0" range="1000.0"/>
+		<connect device_id="1" occlusion_test="false"/>
+		<world_transform xyz="5.0 -5.0 -2.0" rpy="0.0 0.0 0.0"/>
+	</comm>
+
+	<comm name="Modem5" device_id="5" type="acoustic_modem">
+		<specs min_vertical_fov="0.0" max_vertical_fov="220.0" range="1000.0"/>
+		<connect device_id="1" occlusion_test="false"/>
+		<world_transform xyz="-5.0 -5.0 -2.0" rpy="0.0 0.0 0.0"/>
+	</comm>
+
 </scenario>

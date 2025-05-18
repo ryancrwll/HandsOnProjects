@@ -3,7 +3,7 @@
 	<solver>
 		<erp value="0.5"/>
 		<stop_erp value="0.25"/>
-		<erp2 value="0.15"/>
+		<erp2 value="0.9"/>
 		<global_damping value="0.25"/>
 	</solver>
 
@@ -57,11 +57,90 @@
 		<world_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
 	</static>
 
-	<include file="$(find frontier_search_dwa)/scenarios/circuit2_arucos.scn"/>
+	<include file="$(find turtlebot_simulation)/scenarios/circuit2.scn"/>
 
-    <include file="$(find frontier_search_dwa)/scenarios/kobuki_lidar_range_3.scn">
+	<dynamic name="Box1" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<mass value="0.1"/>
+		<look name="aruco_box"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="0.7 2.5 0.0"/>
+	</dynamic>
+
+	<dynamic name="Box2" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<mass value="0.1"/>
+		<look name="aruco_box"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="1.4 0.7 0.0"/>
+	</dynamic>
+
+	<dynamic name="Box3" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<mass value="0.1"/>
+		<look name="aruco_box"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="2.4 3.15 0.0"/>
+	</dynamic>
+
+	<dynamic name="Box4" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<mass value="0.1"/>
+		<look name="aruco_box"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="4.8 2.6 0.0"/>
+	</dynamic>
+
+	<dynamic name="Box5" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<mass value="0.1"/>
+		<look name="aruco_box"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="5.2 -1.0 0.0"/>
+	</dynamic>
+
+    <include file="$(find turtlebot_simulation)/scenarios/turtlebot_featherstone.scn">
 		<arg name="robot_name" value="$(param robot_name)"/>
 		<arg name="start_position" value="3.0 -0.78 -0.2"/>
-		<arg name="start_yaw" value="${pi/2.0}"/>		
+		<arg name="start_yaw" value="${pi/2.0}"/>
+		<arg name="arm_yaw" value="${-pi/2.0}"/>
+		<arg name="arm_x" value="0.0507"/>
+		<arg name="arm_y" value="0.0"/>
+		<arg name="arm_z" value="0.0"/>
 	</include>
 </scenario>

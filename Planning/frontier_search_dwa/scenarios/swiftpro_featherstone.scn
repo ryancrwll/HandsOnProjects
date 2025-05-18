@@ -1,0 +1,323 @@
+<?xml version="1.0"?>
+<scenario>
+	<looks>
+		<look name="black_anodized" gray="0.05" roughness="0.7" metalness="1.0"/>
+		<look name="suction_cup" gray="0.90" roughness="0.5" metalness="0.0"/>
+	</looks>
+
+	<robot name="$(arg robot_name)" fixed="true" self_collisions="false" algorithm="featherstone">
+		<base_link name="Base" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/base_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/base.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</visual>
+			<material name="Aluminium"/>
+			<mass value="1.0"/>
+			<look name="black_anodized"/>
+		</base_link>
+
+		<link name="Link1" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link1_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link1.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</visual>
+			<material name="Aluminium"/>
+			<mass value="1.0"/>
+			<look name="black_anodized"/>
+		</link>
+	
+		<link name="Link2" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link2_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.0133 0.0 0.1056"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link2.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.0133 0.0 0.1056"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link3" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link3_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.0133 0.0 0.2476"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link3.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.0133 0.0 0.2476"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link4" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link4_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.0133 0.0 0.2476"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link4.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.0133 0.0 0.2476"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link5" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link5_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.0214 0.0 0.1223"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link5.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.0214 0.0 0.1223"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link6" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link6_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.0133 0.0 0.1056"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link6.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.0133 0.0 0.1056"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link7" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link7_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.0322 0.0 0.1026"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link7.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="0.0322 0.0 0.1026"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link8a" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link8a_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.172 0.0 0.2476"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link8a.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.172 0.0 0.2476"/>
+			</visual>
+			<material name="Aluminium"/>
+			<mass value="0.025"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<link name="Link8b" type="compound" physics="surface">
+			<external_part name="Link8bValve" type="model" physics="surface">
+				<physical>
+					<mesh filename="$(find swiftpro_description)/resources/meshes/link8b_phy.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="-0.2285 0.0 0.2476"/>
+				</physical>
+				<visual>
+					<mesh filename="$(find swiftpro_description)/resources/meshes/link8b.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="-0.2285 0.0 0.2476"/>
+				</visual>
+				<material name="Aluminium"/>
+				<mass value="0.015"/>
+				<look name="black_anodized"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+			<external_part name="Link8bCup" type="model" physics="surface">
+				<physical>
+					<mesh filename="$(find swiftpro_description)/resources/meshes/link8bcup_phy.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="-0.2285 0.0 0.2476"/>
+				</physical>
+				<visual>
+					<mesh filename="$(find swiftpro_description)/resources/meshes/link8bcup.obj" scale="1.0"/>
+					<origin rpy="0.0 0.0 0.0" xyz="-0.2285 0.0 0.2476"/>
+				</visual>
+				<material name="Aluminium"/>
+				<mass value="0.005"/>
+				<look name="suction_cup"/>
+				<compound_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			</external_part>
+			<contact stiffness="100000.0" damping="0.5"/>
+		</link>
+	
+		<link name="Link9" type="model" physics="surface">
+			<physical>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link9_phy.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.1994 0.0 0.2746"/>
+			</physical>
+			<visual>
+				<mesh filename="$(find swiftpro_description)/resources/meshes/link9.obj" scale="1.0"/>
+				<origin rpy="0.0 0.0 0.0" xyz="-0.1994 0.0 0.2746"/>
+			</visual>
+			<material name="Aluminium"/>
+			<look name="black_anodized"/>
+		</link>
+
+		<joint name="joint1" type="revolute">
+			<parent name="Base"/>
+			<child name="Link1"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			<axis xyz="0.0 0.0 1.0"/>
+			<limits min="${-pi/2.0}" max="${pi/2.0}"/>
+		</joint>
+
+		<joint name="joint2" type="revolute">
+			<parent name="Link1"/>
+			<child name="Link2"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0133 0.0 -0.1056"/>
+			<axis xyz="0.0 1.0 0.0"/>
+			<limits min="${-pi/2.0}" max="0.05"/>
+		</joint>
+
+		<joint name="passive_joint1" type="revolute">
+			<parent name="Link2"/>
+			<child name="Link3"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 -0.142"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="passive_joint2" type="revolute">
+			<parent name="Link2"/>
+			<child name="Link4"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 -0.142"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="passive_joint3" type="revolute">
+			<parent name="Link1"/>
+			<child name="Link5"/>
+			<origin rpy="0.0 0.0 0.0" xyz="-0.0214 0.0 -0.1223"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="joint3" type="revolute">
+			<parent name="Link1"/>
+			<child name="Link6"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0133 0.0 -0.1056"/>
+			<axis xyz="0.0 1.0 0.0"/>
+			<limits min="${-pi/2.0}" max="0.05"/>
+		</joint>
+
+		<joint name="passive_joint5" type="revolute">
+			<parent name="Link6"/>
+			<child name="Link7"/>
+			<origin rpy="0.0 0.0 0.0" xyz="-0.0455 0.0 0.003"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="passive_joint7" type="revolute">
+			<parent name="Link3"/>
+			<child name="Link8a"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.1587 0.0 0.0"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>		
+
+		<joint name="passive_joint8" type="revolute">
+			<parent name="Link8a"/>
+			<child name="Link9"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0274 0.0 -0.027"/>
+			<axis xyz="0.0 1.0 0.0"/>
+		</joint>
+
+		<joint name="joint4" type="revolute">
+			<parent name="Link8a"/>
+			<child name="Link8b"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0565 0.0 0.0"/>
+			<axis xyz="0.0 0.0 1.0"/>
+			<limits min="${-pi/2.0}" max="${pi/2.0}"/>
+		</joint>
+
+		<actuator name="Servo1" type="servo">
+			<joint name="joint1"/>
+			<controller position_gain="1.0" velocity_gain="1.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="Servo2" type="servo">
+			<joint name="joint2"/>
+			<controller position_gain="1.0" velocity_gain="1.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="Servo3" type="servo">
+			<joint name="joint3"/>
+			<controller position_gain="1.0" velocity_gain="1.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="Servo4" type="servo">
+			<joint name="passive_joint1"/>
+			<controller position_gain="1.0" velocity_gain="1.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="Servo5" type="servo">
+			<joint name="passive_joint2"/>
+			<controller position_gain="1.0" velocity_gain="1.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="Servo6" type="servo">
+			<joint name="passive_joint3"/>
+			<controller position_gain="1.0" velocity_gain="1.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="Servo7" type="servo">
+			<joint name="passive_joint5"/>
+			<controller position_gain="1.0" velocity_gain="1.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="Servo8" type="servo">
+			<joint name="passive_joint7"/>
+			<controller position_gain="1.0" velocity_gain="1.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="Servo9" type="servo">
+			<joint name="passive_joint8"/>
+			<controller position_gain="1.0" velocity_gain="1.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="Servo10" type="servo">
+			<joint name="joint4"/>
+			<controller position_gain="1.0" velocity_gain="1.0" max_torque="1000.0"/>
+		</actuator>
+
+		<actuator name="SuctionCup" type="suction_cup">
+			<link name="Link8b"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+			<ros_publisher topic="/$(arg robot_name)/vacuum_gripper/pump_state"/>
+			<ros_service topic="/$(arg robot_name)/vacuum_gripper/set_pump"/>
+		</actuator>
+
+		<ros_control_interface namespace="/$(arg robot_name)" type="velocity">
+			<joint name="joint1"/>
+			<joint name="joint2"/>
+			<joint name="joint3"/>
+			<joint name="joint4"/>
+		</ros_control_interface>
+
+		<ros_control_interface namespace="/$(arg robot_name)/stonefish_simulator" type="position">
+			<joint name="passive_joint1"/>
+			<joint name="passive_joint2"/>
+			<joint name="passive_joint3"/>
+			<joint name="passive_joint5"/>
+			<joint name="passive_joint7"/>
+			<joint name="passive_joint8"/>
+		</ros_control_interface>
+
+		<world_transform rpy="0.0 0.0 $(arg start_yaw)" xyz="$(arg start_position)"/>
+	</robot>
+</scenario>

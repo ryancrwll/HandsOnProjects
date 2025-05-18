@@ -3,7 +3,7 @@
 	<solver>
 		<erp value="0.5"/>
 		<stop_erp value="0.25"/>
-		<erp2 value="0.15"/>
+		<erp2 value="0.9"/>
 		<global_damping value="0.25"/>
 	</solver>
 
@@ -57,11 +57,16 @@
 		<world_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
 	</static>
 
-	<include file="$(find frontier_search_dwa)/scenarios/circuit2_arucos.scn"/>
+	<include file="$(find turtlebot_simulation)/scenarios/circuit2_arucos.scn"/>
 
-    <include file="$(find frontier_search_dwa)/scenarios/kobuki_lidar_range_3.scn">
+
+    <include file="$(find turtlebot_simulation)/scenarios/turtlebot_featherstone.scn">
 		<arg name="robot_name" value="$(param robot_name)"/>
 		<arg name="start_position" value="3.0 -0.78 -0.2"/>
-		<arg name="start_yaw" value="${pi/2.0}"/>		
+		<arg name="start_yaw" value="${pi/2.0}"/>
+		<arg name="arm_yaw" value="${-pi/2.0}"/>
+		<arg name="arm_x" value="0.0507"/>
+		<arg name="arm_y" value="0.0"/>
+		<arg name="arm_z" value="0.0"/>
 	</include>
 </scenario>

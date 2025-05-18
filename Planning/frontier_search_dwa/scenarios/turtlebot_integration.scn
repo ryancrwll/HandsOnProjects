@@ -1,0 +1,365 @@
+<?xml version="1.0"?>
+<scenario>
+	<solver>
+		<erp value="0.5"/>
+		<stop_erp value="0.25"/>
+		<erp2 value="0.9"/>
+		<global_damping value="0.25"/>
+	</solver>
+
+	<environment>
+		<ned latitude="41.7777" longitude="3.0333"/>
+		<atmosphere>
+			<sun azimuth="-127.0" elevation="60.0"/>
+		</atmosphere>
+	</environment>
+
+	<materials>
+		<material name="Concrete" density="2400.0" restitution="0.6"/>
+		<material name="Plastic" density="1500.0" restitution="0.8"/>
+		<material name="Aluminium" density="2710.0" restitution="0.7"/>
+		<material name="Rubber1" density="1340.0" restitution="0.4"/>
+		<material name="Rubber2" density="1340.0" restitution="0.4"/>
+		<material name="Caster" density="1500.0" restitution="0.2"/>
+		<friction_table>
+			<friction material1="Concrete" material2="Concrete" static="0.9" dynamic="0.7"/>
+			<friction material1="Concrete" material2="Plastic" static="0.6" dynamic="0.4"/>
+			<friction material1="Concrete" material2="Aluminium" static="0.6" dynamic="0.3"/>
+			<friction material1="Concrete" material2="Rubber1" static="0.9" dynamic="0.8"/>
+			<friction material1="Concrete" material2="Rubber2" static="0.9" dynamic="0.8"/>
+			<friction material1="Concrete" material2="Caster" static="0.1" dynamic="0.05"/>
+			<friction material1="Plastic" material2="Plastic" static="0.5" dynamic="0.2"/>
+			<friction material1="Plastic" material2="Aluminium" static="0.3" dynamic="0.1"/>
+			<friction material1="Plastic" material2="Rubber1" static="0.5" dynamic="0.3"/>
+			<friction material1="Plastic" material2="Rubber2" static="0.5" dynamic="0.3"/>
+			<friction material1="Plastic" material2="Caster" static="0.1" dynamic="0.05"/>
+			<friction material1="Aluminium" material2="Aluminium" static="0.8" dynamic="0.5"/>
+			<friction material1="Aluminium" material2="Rubber1" static="0.6" dynamic="0.3"/>
+			<friction material1="Aluminium" material2="Rubber2" static="0.6" dynamic="0.3"/>
+			<friction material1="Aluminium" material2="Caster" static="0.1" dynamic="0.05"/>
+			<friction material1="Rubber1" material2="Rubber1" static="0.9" dynamic="0.9"/>
+			<friction material1="Rubber1" material2="Rubber2" static="0.9" dynamic="0.9"/>
+			<friction material1="Rubber1" material2="Caster" static="0.1" dynamic="0.05"/>
+			<friction material1="Rubber2" material2="Rubber2" static="0.9" dynamic="0.9"/>
+			<friction material1="Rubber2" material2="Caster" static="0.1" dynamic="0.05"/>
+			<friction material1="Caster" material2="Caster" static="0.1" dynamic="0.05"/>
+		</friction_table>
+	</materials>
+
+	<looks>
+		<look name="grid" gray="1.0" roughness="1.0" texture="textures/grid.png" />
+		<look name="white" gray="1.0" roughness="1.0" />
+		<look name="aruco_box" gray="1.0" roughness="0.5" texture="textures/aruco_box.png"/>
+		<look name="bay" gray="1.0" roughness="0.5" texture="textures/aruco_original91.png"/>
+		<look name="bottle1" hsv="0.6 0.5 0.9" roughness="0.05"/>
+		<look name="bottle2" hsv="0.35 0.9 0.5" roughness="0.05"/>
+		<look name="bottle3" hsv="0.3 0.9 0.3" roughness="0.05"/>
+		<look name="laptop" gray="1.0" roughness="0.5" texture="textures/laptop.jpg"/>
+		<look name="wood" gray="1.0" roughness="0.3" texture="textures/wood.jpg"/>
+		<look name="orange" hsv="0.05 1.0 0.9" roughness="0.9"/>
+		<look name="old_book" gray="1.0" roughness="0.9" texture="textures/old_book.jpg"/>
+	</looks>
+
+	<static name="Ground" type="plane">
+		<material name="Concrete"/>
+		<look name="grid" uv_scale="1.0"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+	</static>
+
+	<static name="Wall1" type="box">
+		<dimensions xyz="8.0 0.1 1.0"/>
+		<material name="Concrete"/>
+		<look name="white"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="3.0 -2.5 -0.5"/>
+	</static>
+
+	<static name="Wall2" type="box">
+		<dimensions xyz="8.0 0.1 1.0"/>
+		<material name="Concrete"/>
+		<look name="white"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="3.0 4.5 -0.5"/>
+	</static>
+
+	<static name="Wall3" type="box">
+		<dimensions xyz="7.1 0.1 1.0"/>
+		<material name="Concrete"/>
+		<look name="white"/>
+		<world_transform rpy="0.0 0.0 ${pi/2.0}" xyz="-0.95 1.0 -0.5"/>
+	</static>
+
+	<static name="Wall4" type="box">
+		<dimensions xyz="7.1 0.1 1.0"/>
+		<material name="Concrete"/>
+		<look name="white"/>
+		<world_transform rpy="0.0 0.0 ${pi/2.0}" xyz="6.95 1.0 -0.5"/>
+	</static>
+
+	<include file="$(find turtlebot_simulation)/scenarios/circuit2_arucos.scn"/>
+
+	<dynamic name="Box1" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<mass value="0.1"/>
+		<look name="aruco_box"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="0.7 2.5 0.0"/>
+	</dynamic>
+
+	<dynamic name="Box2" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<mass value="0.1"/>
+		<look name="aruco_box"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="1.4 0.7 0.0"/>
+	</dynamic>
+
+	<dynamic name="Box3" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<mass value="0.1"/>
+		<look name="aruco_box"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="2.4 3.15 0.0"/>
+	</dynamic>
+
+	<dynamic name="Box4" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<mass value="0.1"/>
+		<look name="aruco_box"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="4.8 2.6 0.0"/>
+	</dynamic>
+
+	<dynamic name="Box5" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/aruco_box.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<mass value="0.1"/>
+		<look name="aruco_box"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="5.2 -1.0 0.0"/>
+	</dynamic>
+
+	<static name="Bay" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/bay.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/bay.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<look name="bay"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="-0.5 3.5 0.0"/>
+	</static>
+
+	<static name="Bottle1" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/bottle1.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/bottle1.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<look name="bottle1"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="2.2 1.5 0.0"/>
+	</static>
+
+	<static name="Bottle2" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/bottle2.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/bottle2.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<look name="bottle2"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="5.0 1.0 0.0"/>
+	</static>
+
+	<static name="Bottle3" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/bottle3.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/bottle3.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<look name="bottle3"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="5.1 0.7 0.0"/>
+	</static>
+
+	<static name="Laptop" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/laptop.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/laptop.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<look name="laptop"/>
+		<world_transform rpy="0.0 0.0 0.5" xyz="6.5 3.5 0.0"/>
+	</static>
+
+	<static name="Chair1" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/chair1.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/chair1.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<look name="orange"/>
+		<world_transform rpy="0.0 0.0 -0.5" xyz="6.5 1.0 0.0"/>
+	</static>
+
+	<static name="Chair2" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/chair2.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/chair2.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<look name="wood"/>
+		<world_transform rpy="0.0 0.0 -2.0" xyz="4.0 -1.0 0.0"/>
+	</static>
+
+	<static name="Book1" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/book.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/book.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<look name="old_book"/>
+		<world_transform rpy="0.0 0.0 0.6" xyz="5.0 4.0 0.0"/>
+	</static>
+
+	<static name="Book2" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/book.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/book.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<look name="old_book"/>
+		<world_transform rpy="${pi/2} 0.0 1.2" xyz="4.0 4.0 -0.12"/>
+	</static>
+
+	<static name="Book3" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/book.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/book.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<look name="old_book"/>
+		<world_transform rpy="${pi/2} 0.0 1.5" xyz="4.1 4.0 -0.12"/>
+	</static>
+
+	<static name="Book4" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/book.obj" scale="0.5"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/book.obj" scale="0.5"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<look name="old_book"/>
+		<world_transform rpy="${pi/2} 0.0 1.7" xyz="4.15 4.1 -0.06"/>
+	</static>
+
+	<static name="Book5" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/book.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/book.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<look name="old_book"/>
+		<world_transform rpy="${pi/2} 0.0 -1.0" xyz="1.3 2.0 -0.12"/>
+	</static>
+
+	<static name="Bowl1" type="model">
+		<physical>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/bowl.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</physical>
+		<visual>
+			<mesh filename="$(find turtlebot_simulation)/resources/meshes/bowl.obj" scale="1.0"/>
+			<origin rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
+		</visual>
+		<material name="Plastic"/>
+		<look name="bottle1"/>
+		<world_transform rpy="0.0 0.0 0.0" xyz="5.0 1.2 0.0"/>
+	</static>
+
+    <include file="$(find turtlebot_simulation)/scenarios/turtlebot_featherstone.scn">
+		<arg name="robot_name" value="$(param robot_name)"/>
+		<arg name="start_position" value="3.0 -0.78 -0.2"/>
+		<arg name="start_yaw" value="${pi/2.0}"/>
+		<arg name="arm_yaw" value="${-pi/2.0}"/>
+		<arg name="arm_x" value="0.0507"/>
+		<arg name="arm_y" value="0.0"/>
+		<arg name="arm_z" value="0.0"/>
+	</include>
+</scenario>

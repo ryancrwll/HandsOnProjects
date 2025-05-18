@@ -3,14 +3,14 @@
 	<solver>
 		<erp value="0.5"/>
 		<stop_erp value="0.25"/>
-		<erp2 value="0.15"/>
+		<erp2 value="0.9"/>
 		<global_damping value="0.25"/>
 	</solver>
 
 	<environment>
 		<ned latitude="41.7777" longitude="3.0333"/>
 		<atmosphere>
-			<sun azimuth="47.0" elevation="70.0"/>
+			<sun azimuth="180.0" elevation="50.0"/>
 		</atmosphere>
 	</environment>
 
@@ -48,7 +48,6 @@
 
 	<looks>
 		<look name="grid" gray="1.0" roughness="1.0" texture="textures/grid.png" />
-		<look name="aruco_box" gray="1.0" roughness="0.5" texture="textures/aruco_box.png"/>
 	</looks>
 
 	<static name="Ground" type="plane">
@@ -57,11 +56,27 @@
 		<world_transform rpy="0.0 0.0 0.0" xyz="0.0 0.0 0.0"/>
 	</static>
 
-	<include file="$(find frontier_search_dwa)/scenarios/circuit2_arucos.scn"/>
+	<static name="Box" type="box">
+		<dimensions xyz="1.0 1.0 1.0"/>
+		<material name="Concrete"/>
+		<look name="grid" uv_mode="1"/>
+		<world_transform rpy="0 0 0" xyz="2.0 2.0 -0.5"/>
+	</static>
 
-    <include file="$(find frontier_search_dwa)/scenarios/kobuki_lidar_range_3.scn">
+	<static name="Cylinder" type="cylinder">
+		<dimensions radius="0.5" height="1.0"/>
+		<material name="Concrete"/>
+		<look name="grid"/>
+		<world_transform rpy="0 0 0" xyz="3.0 -1.5 -0.5"/>
+	</static>
+
+    <include file="$(find turtlebot_simulation)/scenarios/turtlebot_featherstone.scn">
 		<arg name="robot_name" value="$(param robot_name)"/>
-		<arg name="start_position" value="3.0 -0.78 -0.2"/>
-		<arg name="start_yaw" value="${pi/2.0}"/>		
+		<arg name="start_position" value="0.0 0.0 -0.2"/>
+		<arg name="start_yaw" value="0.0"/>
+		<arg name="arm_yaw" value="${-pi/2.0}"/>
+		<arg name="arm_x" value="0.0507"/>
+		<arg name="arm_y" value="0.0"/>
+		<arg name="arm_z" value="0.0"/>
 	</include>
 </scenario>
