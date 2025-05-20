@@ -2,7 +2,7 @@
     <!-- Configurable arguments -->
     <arg name="robot_name" default="turtlebot"/>
     <arg name="simulation_data" default="$(find turtlebot_simulation)/resources"/>
-    <arg name="scenario_description" default="$(find frontier_search_dwa)/scenarios/kobuki_hol_circuit2_arucos.scn"/>
+    <arg name="scenario_description" default="$(find frontier_search_dwa)/scenarios/kobuki_hol_circuit2_arucos_enclosed.scn"/>
     <arg name="simulation_rate" default="300.0"/>
     <arg name="graphics_resolution" default="800 640"/>
     <arg name="graphics_quality" default="low"/>

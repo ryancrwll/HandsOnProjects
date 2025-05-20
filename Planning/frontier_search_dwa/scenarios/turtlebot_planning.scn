@@ -308,7 +308,7 @@
 		<arg name="arm_z" value="0.0"/>
 	</include> -->
 
-	<include file="$(find turtlebot_simulation)/scenarios/kobuki.scn">
+	<include file="$(find frontier_search_dwa)/scenarios/kobuki_lidar_range_12.scn">
 		<arg name="robot_name" value="$(param robot_name)"/>
 		<arg name="start_position" value="3.0 -0.78 -0.2"/>
 		<arg name="start_yaw" value="${pi/2.0}"/>

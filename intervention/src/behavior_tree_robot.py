@@ -99,70 +99,71 @@ class MoveRobotToPick(py_trees.behaviour.Behaviour):
         try:
             # Set up signal handler for interrupting the process
             # signal.signal(signal.SIGINT, self.signal_handler)
-            for i in range(3):
-                self.logger.debug("  {}: Publishing goal position".format(self.name))
-                if i == 0:
-                    rospy.logerr('1st iteration: turning so arm faces box')
-                    # Call the Aruco service to get the position
-                    response = self.set_aruco()
-                    time.sleep(0.5)
-                    # Set the weight for the arm
-                    response = self.set_weight(self.weight_arm_pose)
-                    #response = self.set_task([0])    #### 
-                    time.sleep(0.2)
-                    threshold = 0.08
-                    # Update the goal position from the blackboard
-                    goal_position = blackboard.front_point
-                    response = self.set_goal(goal_position)
-                    #response = self.set_task([0]) ###
-                    self.goal_xyz = goal_position[0:3]
-                    # Calculate the distance between the goal and the current end-effector position
-                    while not self.isPose:
-                        time.sleep(.1)
+            self.logger.debug("  {}: Publishing goal position".format(self.name))
+                
+            rospy.loginfo('Turning so arm faces box')
+            # Call the Aruco service to get the position
+            response = self.set_aruco()
+            time.sleep(0.5)
+            # Set the weight for the arm
+            response = self.set_weight(self.weight_arm_pose)
+            #response = self.set_task([0])    #### 
+            time.sleep(0.2)
+            threshold = 0.08
+            # Update the goal position from the blackboard
+            goal_position = blackboard.front_point
+            response = self.set_goal(goal_position)
+            #response = self.set_task([0]) ###
+            self.goal_xyz = goal_position[0:3]
+            # Calculate the distance between the goal and the current end-effector position
+            while not self.isPose:
+                time.sleep(.1)
+            initial_pose = [self.robot_state[0], self.robot_state[1], 0]
+            blackboard.safe_arm_pose = initial_pose - self.ee_pose
+            distance = np.linalg.norm(self.goal_xyz - self.ee_pose)
+            while distance > threshold:
+                try:
                     distance = np.linalg.norm(self.goal_xyz - self.ee_pose)
-                    while distance > threshold:
-                        try:
-                            distance = np.linalg.norm(self.goal_xyz - self.ee_pose)
-                            time.sleep(0.5)
-                        except KeyboardInterrupt:
-                            print('Loop stopped by user')
-                            break
-                elif i==1:
-                    rospy.logerr('2nd iteration: sets weights to only move with base')
-                    # Set the weight for the robot
-                    response = self.set_weight(self.weight)
-                    time.sleep(0.2)
-                    
-                    # Update the goal position from the Aruco marker
-                    goal_position = blackboard.aruco
-                    #response = self.set_task([0]) ###
-                    time.sleep(1)
-                    self.goal_xyz = np.array([goal_position[0], goal_position[1], goal_position[2]-0.3, 0.0])
+                    time.sleep(0.5)
+                except KeyboardInterrupt:
+                    print('Loop stopped by user')
+                    break
 
-                    response = self.set_goal(self.goal_xyz)
-                    threshold = 0.32
+            rospy.loginfo('Sets weights to only move with base')
+            # Set the weight for the robot
+            response = self.set_weight(self.weight)
+            time.sleep(0.2)
+            
+            # Update the goal position from the Aruco marker
+            goal_position = blackboard.aruco
+            #response = self.set_task([0]) ###
+            time.sleep(1)
+            self.goal_xyz = np.array([goal_position[0], goal_position[1], goal_position[2]-0.3, 0.0])
+
+            response = self.set_goal(self.goal_xyz)
+            threshold = 0.32
+            distance = np.linalg.norm(self.goal_xyz[:2] - self.robot_state[:2])
+            while distance > threshold:
+                try:
                     distance = np.linalg.norm(self.goal_xyz[:2] - self.robot_state[:2])
-                    while distance > threshold:
-                        try:
-                            distance = np.linalg.norm(self.goal_xyz[:2] - self.robot_state[:2])
-                          
-                        except KeyboardInterrupt:
-                            print('Loop stopped by user')
-                            break
-                else:
-                    rospy.logerr('3rd iteration: Once in distance only uses arm again')
-                    response = self.set_weight(self.weight_arm_pose)
-                    time.sleep(0.2)
+                    
+                except KeyboardInterrupt:
+                    print('Loop stopped by user')
+                    break
 
-                    threshold = 0.002
-                    approach_point = np.array([self.goal_xyz[0], self.goal_xyz[1], self.goal_xyz[2]])
+            rospy.loginfo('Once in distance only uses arm again')
+            response = self.set_weight(self.weight_arm_pose)
+            time.sleep(0.2)
+
+            threshold = 0.002
+            approach_point = np.array([self.goal_xyz[0], self.goal_xyz[1], self.goal_xyz[2]])
+            distance = np.linalg.norm(approach_point - self.ee_pose)
+            while distance > threshold:
+                try:
                     distance = np.linalg.norm(approach_point - self.ee_pose)
-                    while distance > threshold:
-                        try:
-                            distance = np.linalg.norm(approach_point - self.ee_pose)
-                        except KeyboardInterrupt:
-                            print('Loop stopped by user')
-                            break
+                except KeyboardInterrupt:
+                    print('Loop stopped by user')
+                    break
 
             rospy.logwarn('Goal reached')
             return py_trees.common.Status.SUCCESS
@@ -236,15 +237,14 @@ class MoveRobotToPlace(py_trees.behaviour.Behaviour):
             response = self.set_goal(goal_position)
             time.sleep(1)
             rospy.loginfo("Goal set successfully")
-            self.goal_xy = goal_position[0:2]
+            self.goal_xy = [goal_position[0]-0.25, goal_position[1]]
             print('Goal_position', self.goal_xy)
             threshold = 0.2
             # Calculate the distance between the goal and the current robot state
-            distance = math.dist(self.goal_xy, self.robot_state)
+            distance = np.linalg.norm(self.goal_xy - self.robot_state)
             while distance > threshold:
                 try:
-                    distance = math.dist(self.goal_xy, self.robot_state)
-                   
+                    distance = np.linalg.norm(self.goal_xy - self.robot_state)
                     time.sleep(0.5)
                 except KeyboardInterrupt:
                     print('Loop stopped by user')
@@ -350,7 +350,7 @@ class PickPoints(py_trees.behaviour.Behaviour):
         holding_height = self.goal_position[2]-0.5
 
         pick_1 = [self.goal_position[0], self.goal_position[1], engage_height, self.angle]
-        pick_2 = [self.robot_state[0], self.robot_state[1] - 0.27, -0.4, self.angle]
+        pick_2 = [self.robot_state[0] + 0.25, self.robot_state[1], -0.4, self.angle]
         self.point_locations = [pick_1, pick_2]
         self.gripper_on = False
         self.logger.debug("  %s [PickPoints::initialise()]" % self.name)
@@ -371,7 +371,7 @@ class PickPoints(py_trees.behaviour.Behaviour):
                     time.sleep(0.5)
                     if i == 0:
                         response = self.set_pump_proxy(True)
-                        threshold = 0.005
+                        threshold = 0.00375
                         time.sleep(0.5)
                     else:
                         threshold = 0.08
@@ -380,11 +380,10 @@ class PickPoints(py_trees.behaviour.Behaviour):
                     self.goal_xyz = self.point_locations[i][0:3]
                     
                     # Calculate the distance between the goal and the current end-effector position
-                    distance = math.dist(self.goal_xyz, self.ee_pose)
+                    distance = np.linalg.norm(np.array(self.goal_xyz) - np.array(self.ee_pose))
                     while distance > threshold:
                         try:
-                            distance = math.dist(self.goal_xyz, self.ee_pose)
-                            print(f'error: {distance}')
+                            distance = np.linalg.norm(np.array(self.goal_xyz) - np.array(self.ee_pose))
                             time.sleep(0.5)
                         except KeyboardInterrupt:
                             print('Loop stopped by user')
@@ -441,12 +440,11 @@ class PlacePoints(py_trees.behaviour.Behaviour):
             self.logger.debug("  %s [PlacePoints::setup() Server connected!]" % self.name)
 
             return True  # Must return py_trees status
-        except rospy.ServiceException as e:
-            self.logger.error("  %s [PlacePoints::setup() Service error: %s]" % (self.name, str(e)))
-            return False
-        except rospy.ROSException as e:
-            self.logger.error("  %s [PlacePoints::setup() Timeout or ROS error: %s]" % (self.name, str(e)))
-            return False
+        
+        except Exception as e:
+            self.logger.debug(f"Error in MoveRobotToPick block: {str(e)}\n{traceback.format_exc()}")
+           
+            return py_trees.common.Status.FAILURE
 
 
 
@@ -473,20 +471,20 @@ class PlacePoints(py_trees.behaviour.Behaviour):
             if self.point_locations:
                 for i in range(len(self.point_locations)):
                     self.logger.debug("  {}: Publishing goal position".format(self.name))
-                    point = self.point_locations.pop(0)
-                    goal_point = point
+                    goal_point = self.point_locations.pop(0)
+                    print(f'goalpoint: {goal_point}')
                     # Send the goal position to the server
                     response = self.set_goal(goal_point)
                     time.sleep(0.5)
                     time.sleep(2)
                     rospy.loginfo("Goal set successfully")
                     self.goal_xyz = goal_point[0:3]
-                    threshold = 0.05
+                    threshold = 0.08
                     # Calculate the distance between the goal and the current end-effector position
-                    distance = math.dist(self.goal_xyz, self.ee_pose)
+                    distance = np.linalg.norm(np.array(self.goal_xyz) - np.array(self.ee_pose))
                     while distance > threshold:
                         try:
-                            distance = math.dist(self.goal_xyz, self.ee_pose)
+                            distance = np.linalg.norm(np.array(self.goal_xyz) - np.array(self.ee_pose))
                            
                             time.sleep(0.5)
                         except KeyboardInterrupt:
@@ -499,9 +497,10 @@ class PlacePoints(py_trees.behaviour.Behaviour):
                 return py_trees.common.Status.SUCCESS
             else:
                 return py_trees.common.Status.RUNNING
-        except:
-            self.logger.debug(
-                "  {}: (Error  in PlacePoints block) calling service ".format(self.name))
+        
+        except Exception as e:
+            self.logger.debug(f"Error in MoveRobotToPick block: {str(e)}\n{traceback.format_exc()}")
+           
             return py_trees.common.Status.FAILURE
 
     def terminate(self, new_status):
@@ -561,27 +560,50 @@ class MoveToHome(py_trees.behaviour.Behaviour):
         self.distance = 0
         # Define the home position for the robot base 
         self.weight = [1.0, 1.0, 1000.0, 1000.0, 1000.0, 1000.0]
+        self.weight_arm_pose = [100000.0, 100000.0, 1.0, 1.0, 1.0, 1.0]
+        pose = [self.robot_state[0], self.robot_state[1], 0.0]
+        safe_arm_pose = pose - blackboard.safe_arm_pose
+        self.safe_arm_pose = np.append(safe_arm_pose, 0.0)
         self.home_position = [0.0, 0.0, 0.0, 0.0]
         self.source_frame = 'world_ned'
         self.logger.debug("  %s [MoveToHome::initialise()]" % self.name)
 
     def update(self):
         try:
+            
             # Set up signal handler for interrupting the process
             # signal.signal(signal.SIGINT, self.signal_handler)
             # Move the robot base to the home position
+            response = self.set_weight(self.weight_arm_pose)
+            response = self.set_goal(self.safe_arm_pose)
+            print(self.ee_pose)
+            print(self.safe_arm_pose)
+            time.sleep(0.5)
+            rospy.loginfo("Safe arm position set successfully")
+            self.goal_xyz = self.safe_arm_pose[:3]
+            rospy.loginfo(f'Safe arm position: {self.goal_xyz}')
+            threshold = 0.08
+            distance = np.linalg.norm(np.array(self.goal_xyz)-np.array(self.ee_pose))
+            while distance > threshold:
+                try:
+                    distance = np.linalg.norm(np.array(self.goal_xyz)-np.array(self.ee_pose))              
+                    time.sleep(0.5)
+                except KeyboardInterrupt:
+                    print('Loop stopped by user')
+                    break
+            rospy.loginfo('Safe arm position reached')
             response=self.set_weight(self.weight)
             response = self.set_goal(self.home_position)
             time.sleep(0.5)
             rospy.loginfo("Home position goal set successfully")
             self.goal_xy = self.home_position[0:2]
-            print('Goal_position',self.goal_xy)
-            threshold = 0.4
+            rospy.loginfo(f'Goal_position: {self.goal_xy}')
+            threshold = 0.02
             # Calculate the distance between the goal and the current end-effector position
-            distance = math.dist(self.goal_xy, self.robot_state)
+            distance = np.linalg.norm(np.array(self.goal_xy) - np.array(self.robot_state))
             while distance > threshold:
                 try:
-                    distance = math.dist(self.goal_xy, self.robot_state)
+                    distance = np.linalg.norm(np.array(self.goal_xy) - np.array(self.robot_state))
                    
                     time.sleep(0.5)
                     if distance<threshold:

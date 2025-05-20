@@ -86,8 +86,8 @@ class MainIntervention:
         self.goal_check.publish(self.goal_pose)
 
         self.tasks = [
-            #Jointlimits3D("First Joint", np.array([0.0]), np.array([self.max, self.max_a, self.min, self.min_a]),1),  
-            #Jointlimits3D("Second Joint", np.array([0.0]), np.array([self.max, self.max_a, self.min, self.min_a]),2),
+            Jointlimits3D("First Joint", np.array([0.0]), np.array([self.max, self.max_a, self.min, self.min_a]),1),  
+            Jointlimits3D("Second Joint", np.array([0.0]), np.array([self.max, self.max_a, self.min, self.min_a]),2),
             # Here, only Joint 1 and Joint 2 are protected with joint limit tasks because they’re the most likely 
             # to exceed safe limits during motion. Joint 3 is not as critical, so we skip it for simplicity. 
             # But we could easily add a Jointlimits3D for Joint 3 if needed for safety or completeness.
