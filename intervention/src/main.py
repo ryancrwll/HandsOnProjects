@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import numpy as np 
-import math    
 import rospy 
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64MultiArray,Int32
@@ -32,7 +31,7 @@ class MainIntervention:
     def __init__(self): 
         self.wheel_base_distance = 0.23 
         self.wheel_radius =  0.035  
-        self.dt = 0.0
+        self.dt = 0.1
         self.state = [0.0, 0.0, 0.0]  # [x, y, yaw]
         self.vmax = 0.2
         self.max = 0.5
@@ -41,10 +40,15 @@ class MainIntervention:
         self.min_a = self.min + 0.01 
         self.goal = None 
         self.tasks = []
+        self.q = np.zeros((6, 1)) # q is the joint position vector
+        self.q[2] = 0.0
+        self.last_control_time = rospy.Time.now().to_sec()
   
         # Publishers
         # Publishes the current end-effector pose for visualization in RViz.
         self.pose_EE_pub = rospy.Publisher('/pose_EE', PoseStamped, queue_size=10)
+        # Publishes joint angles
+        self.q_vals_pub = rospy.Publisher('/q_vals', Float64MultiArray, queue_size=10)
         # Publishes the goal pose (used as a visual target marker in RViz).   
         self.goal_check = rospy.Publisher('/goal_check', PoseStamped, queue_size=10) 
         # Sends a vector of joint velocities to move the SwiftPro arm. | Tells each joint how fast to rotate.
@@ -71,18 +75,43 @@ class MainIntervention:
         # This function lets the robot select which control tasks to activate, 
         # like: Move to a goal position? Respect joint limits?
 
-        # When I receive a list of task indices, I pick only those tasks from my full list and make 
-        # them the active ones. The robot will now try to solve only those tasks.
-
         self.selected_task = task_index.data
-        tasks = [self.tasks[i] for i in self.selected_task]
-
-
+        if self.selected_task == 0:
+            rospy.loginfo('Prioritizing ee_pose')
+            tasks = [
+                Jointlimits3D("First Joint", np.array([0.0]), np.array([self.max, self.max_a, self.min, self.min_a]),1),  
+                Jointlimits3D("Second Joint", np.array([0.0]), np.array([self.max, self.max_a, self.min, self.min_a]),2),
+                # Here, only Joint 1 and Joint 2 are protected with joint limit tasks because they’re the most likely 
+                # to exceed safe limits during motion. Joint 3 is not as critical, so we skip it for simplicity. 
+                # But we could easily add a Jointlimits3D for Joint 3 if needed for safety or completeness.
+                Position3D("End-Effector Position", np.array(self.goal[0:3]).reshape(3,1), 6)
+            ]   
+        elif self.selected_task == 1:
+            rospy.loginfo('Prioritizing joint 3 angle then ee_pose')
+            tasks = [
+                Jointlimits3D("First Joint", np.array([0.0]), np.array([self.max, self.max_a, self.min, self.min_a]),1),  
+                Jointlimits3D("Second Joint", np.array([0.0]), np.array([self.max, self.max_a, self.min, self.min_a]),2),
+                # Here, only Joint 1 and Joint 2 are protected with joint limit tasks because they’re the most likely 
+                # to exceed safe limits during motion. Joint 3 is not as critical, so we skip it for simplicity. 
+                # But we could easily add a Jointlimits3D for Joint 3 if needed for safety or completeness.
+                JointPosition3D("3rd Joint Position", np.array([self.goal[4]-np.pi/2]), 3),
+                Position3D("End-Effector Position", np.array(self.goal[0:3]).reshape(3,1), 6)
+            ]
+        else:
+            rospy.loginfo('Prioritizing joint 3 angle')
+            tasks = [
+                Jointlimits3D("First Joint", np.array([0.0]), np.array([self.max, self.max_a, self.min, self.min_a]),1),  
+                Jointlimits3D("Second Joint", np.array([0.0]), np.array([self.max, self.max_a, self.min, self.min_a]),2),
+                # Here, only Joint 1 and Joint 2 are protected with joint limit tasks because they’re the most likely 
+                # to exceed safe limits during motion. Joint 3 is not as critical, so we skip it for simplicity. 
+                # But we could easily add a Jointlimits3D for Joint 3 if needed for safety or completeness.
+                JointPosition3D("3rd Joint Position", np.array([self.goal[4]-np.pi/2]), 3)
+            ]
         self.tasks = tasks
 
     def goal_service(self, goal_msg):
-        self.goal = [[goal_msg.data[0], goal_msg.data[1], goal_msg.data[2]], [goal_msg.data[3]]]
-        self.goal_pose = goal_pose(np.array(self.goal[0]), np.array(self.goal[1]))
+        self.goal = [goal_msg.data[i] for i in range(len(goal_msg.data))]
+        self.goal_pose = goal_pose(np.array(self.goal[0:3]), np.array(self.goal[3]))
         self.goal_check.publish(self.goal_pose)
 
         self.tasks = [
@@ -91,7 +120,7 @@ class MainIntervention:
             # Here, only Joint 1 and Joint 2 are protected with joint limit tasks because they’re the most likely 
             # to exceed safe limits during motion. Joint 3 is not as critical, so we skip it for simplicity. 
             # But we could easily add a Jointlimits3D for Joint 3 if needed for safety or completeness.
-            Position3D("End-Effector Position", np.array(self.goal[0]).reshape(3,1), 6),
+            Position3D("End-Effector Position", np.array(self.goal[0:3]).reshape(3,1), 6)
         ]   
 
     def weight_service(self, weight_msg):
@@ -192,15 +221,17 @@ class MainIntervention:
         dt = self.dt
         P = np.eye(self.robot.getDOF()) # P is the null-space projection matrix
         dq = np.zeros((self.robot.getDOF(), 1)) # dq is the joint + base velocity vector we're going to compute.
-        self.robot.update(dq, dt, self.state) # This updates the robot’s internal state (Manipulator class).
+        self.robot.update(dq, 0.0, self.state) # This updates the robot’s internal state (Manipulator class).
 
         for i in range(len(self.tasks)): # Loop through all tasks
             self.tasks[i].update(self.robot) # The current robot state — compute Jacobian and error.
             if self.tasks[i].bool_is_Active(): # Only solve the task if it's active
                 err = self.tasks[i].getError() # err: how far you are from the goal times a gain
-                gain = 0.3 * np.identity(len(err))
+                gain = 0.8 * np.identity(len(err))
                 err = gain @ err
                 J = self.tasks[i].getJacobian() # J: how changes in joints + base affect the task
+                if self.tasks[i].name == "3rd Joint Position":
+                    J = np.array([0,0,1,0,0,0]).reshape(1,6)
                 J_bar = J @ P # This modifies the Jacobian so it's projected into the null space of previously completed tasks.
                 J_DLS = W_DLS(J_bar, 0.01, self.weight) # Adds damping (0.1) to handle singularities
                 J_pinv = np.linalg.pinv(J_bar) # Compute pseudo-inverse for null space
@@ -215,6 +246,13 @@ class MainIntervention:
                 dq = dq.reshape(6, 1)
 
         self.send_velocity(dq)
+        dt = rospy.Time.now().to_sec() - self.last_control_time
+        self.last_control_time = rospy.Time.now().to_sec()
+        
+        self.q += dq * dt
+        msg = Float64MultiArray()
+        msg.data = self.q.flatten().tolist()
+        self.q_vals_pub.publish(msg)
         pose_ee = pose_EE(self.robot.getEETransform())
         self.pose_EE_pub.publish(pose_ee) # This publishes the current end-effector pose to RViz or logs.
         self.robot.update(dq, dt, self.state) # Updates the robot model for the next cycle 

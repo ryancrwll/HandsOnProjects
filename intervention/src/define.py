@@ -661,3 +661,29 @@ class Jointlimits3D(Task):
             self.a = 1
             self.active = True
             self.err = 1.0
+
+class JointPosition3D(Task):
+
+    def __init__(self, name, desired, link):
+        """
+        Initialize the JointPosition3D task.
+        Args:
+        name (str): Title of the task.
+        desired (numpy.ndarray): Desired sigma (goal).
+        link (int): The link number.
+        """
+        super().__init__(name, desired)
+        self.link = link
+        self.J = np.zeros((1, 6))
+        self.err = np.zeros((1))
+        self.active = True
+
+    def update(self, robot):
+        """
+        Update the task variables.
+        Args:
+        robot (Manipulator): Reference to the manipulator.
+        """
+        self.J = robot.getEEJacobian(self.link)[5, :].reshape(1, 6)  # Update task Jacobian
+        sigma = robot.getJointPos(self.link)  # Get joint position
+        self.err = self.getDesired() - sigma  # Update task error
