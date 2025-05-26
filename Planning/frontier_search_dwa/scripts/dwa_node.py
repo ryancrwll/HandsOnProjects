@@ -18,7 +18,8 @@ def wrap_angle(angle):
 
 class DWA:
     def __init__(self, radius, odom_topic, cmd_vel_topic, path_topic, replan_topic, lidar_topic):
-        # From frontier_search.py
+        # From frontier_node.py
+        self.svc = StateValidityChecker(radius)
         self.current_pose = None # (x,y,theta) #TODO put back if makes sense
         self.last_odom_time = rospy.Time.now().to_sec() # last logged time from receiving pose (seconds)
         self.good_pose = False # bool to tell if pose is recent enough to use
@@ -40,6 +41,7 @@ class DWA:
         self.current_velocity = [0.0, 0.0]  
         # DWA weights for tuning dyanmic window (heading, clearance, velocity, distance to goal) 
         self.weights = np.array([0.5, 0.5, 0.6, 1.3]) # overriden in control loop
+        self.score_with_angular = True
         self.old_weights = self.weights
         # First velocity always opposite #TODO figure out!
         self.control_iteration = 0
@@ -56,7 +58,7 @@ class DWA:
         # Publisher for sending velocity commands to the robot
         self.cmd_pub =  rospy.Publisher(cmd_vel_topic, Twist, queue_size=1)
         # Publisher for possible dwa_arcs
-        self.dwa_pub = rospy.Publisher('/dwa_arcs', Marker, queue_size=10)
+        self.dwa_pub = rospy.Publisher('/dwa_arcs', Marker, queue_size=25)
         # Publisher to tell planner to replan
         self.replan_pub = rospy.Publisher(replan_topic, dwa, queue_size=1)
         # Debug
@@ -74,8 +76,6 @@ class DWA:
         rospy.Timer(rospy.Duration(0.2), self.controller)
 
     def heading_diff_calc(self, position, desired):
-        rospy.logerr_throttle(1.0, f'heading: {np.degrees(position[2])}')
-
         vector = desired - position[:2]
         angle_needed = np.arctan2(vector[1], vector[0])
         return wrap_angle(angle_needed - position[2]), np.linalg.norm(vector)
@@ -95,13 +95,16 @@ class DWA:
                 
     def get_path(self, msg):
         # Pass numpy array of path from frontier_dwa.py
+        self.path = []
         self.planning = msg.planning
         self.path = [[p.pose.position.x, p.pose.position.y] for p in msg.poses]
         if len(msg.poses) > 0:
+            rospy.loginfo(f'Length of received path: {len(self.path)}')
             self.goal = [msg.poses[-1].pose.position.x, msg.poses[-1].pose.position.y]
     
     def get_selected_goal(self, goal):
         #for debugging dwa
+        print('goint to selected goal')
         self.need_new_path = False
         _, _, yaw = tf.transformations.euler_from_quaternion([goal.pose.orientation.x, 
                                                                 goal.pose.orientation.y,
@@ -109,7 +112,6 @@ class DWA:
                                                                 goal.pose.orientation.w])
         # Store current position (x, y, yaw) as a np.array in self.current_pose var.
         self.path = np.array([self.goal[:2]])
-        print(self.path)
     
     def create_obstacles(self, scan):
         if not hasattr(self.current_pose, '__len__'):
@@ -149,7 +151,7 @@ class DWA:
     
     def generate_DWA(self, vel):
         staticConstraints = [self.backwards_vel, self.v_lim[0], -self.v_lim[1], self.v_lim[1]]
-        if len(self.path) != 0:
+        if len(self.path) == 1:
             stopping_dist = np.linalg.norm(self.goal[:2] - self.current_pose[:2])
         else:
             stopping_dist = np.inf
@@ -227,11 +229,13 @@ class DWA:
                 if c_score <= 0:
                     c_score = -np.inf # values between one and zero
                 else:
-                    c_score = (2/(1+np.exp(-50*c_score)))-1
-                    # c_score = 1
+                    # c_score = (2/(1+np.exp(-50*c_score)))-1
+                    c_score = 1
                 # velocity score uses initial velocity and not final bc assuming constant velocity over the window bc it is our control input
                 # normalize it so that 1 is highest possible value
-                v_score = (dyn_windowL[i]/self.v_lim[0]) + 0.1*(dyn_windowA[i]/self.v_lim[1])
+                v_score = (dyn_windowL[i]/self.v_lim[0])
+                if self.score_with_angular:
+                    v_score += 0.1*(dyn_windowA[i]/self.v_lim[1])
                 score = np.array([h_score,c_score,v_score,d_score]) @ self.weights
                 if score > best_score:
                     best_score = score
@@ -246,6 +250,15 @@ class DWA:
     # This method is called every 0.1s. It computes the velocity comands in order to reach the 
     # next waypoint in the path. It also sends zero velocity commands if there is no active path.
     def controller(self, event):
+        # if not self.svc.check_path(self.path):
+        #     self.path = []
+        #     msg = dwa()
+        #     msg.replan_bool = True
+        #     rospy.loginfo("Replan requested")
+        #     self.replan_pub.publish(msg)
+        #     return
+        
+        rospy.loginfo_throttle(3.0,f'len of path in controller(): {len(self.path)}')
 
         while not self.map_loaded and not rospy.is_shutdown():
             rospy.loginfo_throttle(1.0, "[dwa] Waiting for map to become ready...")
@@ -276,39 +289,45 @@ class DWA:
     def control_loop(self):
         '''executes main loop for following path'''
         if self.planning:
-            rospy.logwarn_throttle(1.0, 'Still planning but spinning in meantime')
+            rospy.logwarn_throttle(2.0, 'Still planning...')
             # self.weights = np.array([0.7, 1.0, 1.4, 0.0])
-            self.__send_commnd__(0,0.1)
+            self.__send_commnd__(0,0)
             return
         else:
-            self.weights = np.array([0.7, 0.1, 0.4, 2.3])
+            self.weights = np.array([0.1, 1.0, 0.6, 1.3])
             self.heading_diff, _ = self.heading_diff_calc(self.current_pose[:3], self.waypoint)
-            
-            if self.heading_diff < -np.pi/4:
-                rospy.logwarn_throttle(2.0, 'Adjusting heading to align robot with goal.')
-                self.__send_commnd__(0,self.v_lim[1]*0.3)
-            elif self.heading_diff > np.pi/4:
-                self.__send_commnd__(0,-self.v_lim[1]*0.3)
-                rospy.logwarn_throttle(2.0, 'Adjusting heading to align robot with goal.')
+            # if self.heading_diff < -np.pi/2:
+            #     rospy.logwarn_throttle(2.0, 'Adjusting heading to align robot with goal.')
+            #     rospy.loginfo(self.current_pose[2])
+            #     rospy.loginfo(self.heading_diff)
+            #     self.__send_commnd__(0,self.v_lim[1]*0.3)
+            # elif self.heading_diff > np.pi/2:
+            #     self.__send_commnd__(0,-self.v_lim[1]*0.3)
+            #     rospy.loginfo(self.current_pose[2])
+            #     rospy.loginfo(self.heading_diff)
+            #     rospy.logwarn_throttle(2.0, 'Adjusting heading to align robot with goal.')
         goal_location = self.goal[0]==self.path[0][0] and self.goal[1]==self.path[0][1]
         if goal_location:
+            rospy.loginfo_throttle(3.0,'going to goal')
             # Goal is Reached
             if dist_between_points(self.current_pose[:2], self.goal[:2]) < 0.1:
                 self.__send_commnd__(0,0)
-                del self.path[0]
+                self.path = []
                 self.goal = []
                 rospy.loginfo("Viewpoint reached!!!")
                 msg = dwa()
                 msg.replan_bool = True
-                # msg.path = []
-                # if self.replan_pub.get_num_connections() > 0:
                 rospy.loginfo("Replan requested")
                 self.replan_pub.publish(msg)
                 
         # Moves onto next waypoint in path
-        elif dist_between_points(self.current_pose[:2], self.path[0]) <= 0.16 and not goal_location:
-            del self.path[0]
-            return
+        elif self.path[0][0] != self.goal[0]:
+            rospy.loginfo_throttle(3.0,'going to waypoint')
+            rospy.loginfo_throttle(3.0, f'current pose: {self.current_pose[:2]}')
+            rospy.loginfo_throttle(3.0, f'waypoint: {self.path[0]}')
+            if np.linalg.norm(self.current_pose[:2] - self.path[0]) <= 0.25:
+                del self.path[0]
+                return
         self.current_velocity, best_course, arcs = self.create_DWA_arcs([self.current_velocity[0],self.current_velocity[1]])
         
         # if stuck set angular vel to turn away from obstacles
@@ -412,6 +431,7 @@ class DWA:
                 p.z = -0.3
                 m.points.append(p)
                 m.colors.append(color_yellow)
+                m.lifetime = rospy.Duration(self.dt)
             self.dwa_pub.publish(m)
 
             arrow_marker = Marker()
@@ -427,6 +447,7 @@ class DWA:
                 p.z = -0.3
                 arrow_marker.points.append(p)
                 arrow_marker.colors.append(color_yellow)
+                arrow_marker.lifetime = rospy.Duration(self.dt)
             self.dwa_pub.publish(arrow_marker)
 
 
@@ -449,6 +470,7 @@ class DWA:
                     p.z = -0.35
                     ideal.points.append(p)
                     ideal.colors.append(color_orange)
+                    ideal.lifetime = rospy.Duration(self.dt)
                 else:
                     print('WHYYYYYYYYYYYYYYYYY')
             self.dwa_pub.publish(ideal)
@@ -466,6 +488,7 @@ class DWA:
                 p.z = -0.3
                 ideal_arrow.points.append(p)
                 ideal_arrow.colors.append(color_yellow)
+                ideal_arrow.lifetime = rospy.Duration(self.dt)
             self.dwa_pub.publish(ideal_arrow)
         else:
             rospy.logerr('no best?')

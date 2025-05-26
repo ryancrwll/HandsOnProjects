@@ -17,7 +17,7 @@ from std_srvs.srv import Trigger, TriggerResponse
 from move_base_msgs.msg import MoveBaseActionResult
 from frontier_search_dwa.msg import dwa
 
-from online_planning import StateValidityChecker, Node, move_to_point, compute_path_global, dist_between_points
+from online_planning import StateValidityChecker, Node, compute_path_global, dist_between_points
 
 class OnlinePlanner:
 
@@ -52,13 +52,13 @@ class OnlinePlanner:
         self.replan = False
 
         # FRONTIER SEARCH WEIGHTS      
-        self.vpDist_w = 0.6     
-        self.fSize_w = 0.3           
+        self.vpDist_w = 0.9   
+        self.fSize_w = 0.6        
 
         # Publisher for visualizing the path to with rviz
         self.marker_pub = rospy.Publisher('/path_marker', Marker, queue_size=1)
         # Publisher for visualizing frontiers and viewpoints
-        self.frontier_pub = rospy.Publisher('/frontier_markers', Marker, queue_size=15)
+        self.frontier_pub = rospy.Publisher('/frontier_markers', Marker, queue_size=50)
         # Publisher for sending path to DWA controller
         self.path_pub = rospy.Publisher('/path_for_dwa', dwa, queue_size = 1)
         
@@ -73,6 +73,7 @@ class OnlinePlanner:
     # Receives boolean to check if replan is needed
     def replan_cb(self, msg):
         if msg.replan_bool:
+            self.path = []
             self.get_viewpoint()
             self.plan()
 
@@ -127,8 +128,8 @@ class OnlinePlanner:
         print("[planner] the goal has been set to: ", self.goal)
         self.plan()
 
-    def closest_valid_point(self, cell_pos, desired_location, check_dist):
-        if self.svc.is_valid_pixel(desired_location):
+    def closest_valid_point(self, cell_pos, desired_location, check_dist, travel_dist):
+        if self.svc.is_valid_pixel(desired_location) and np.linalg.norm(desired_location-cell_pos) > travel_dist:
             return desired_location
         else:
             best = np.inf
@@ -139,17 +140,18 @@ class OnlinePlanner:
                     cell_y = desired_location[1] + j
                     cell_loc = np.array([cell_x, cell_y])
                     if self.svc.is_valid_pixel(cell_loc, added_pixel_assurance=3, free_space_goal=True):
-                        score = np.linalg.norm(cell_loc-desired_location) + np.linalg.norm(cell_loc-cell_pos)
-                        if score < best:
-                            best = score
-                            valid_vp = cell_loc
+                        if np.linalg.norm(cell_loc-cell_pos) > travel_dist:
+                            score = np.linalg.norm(cell_loc-desired_location) + np.linalg.norm(cell_loc-cell_pos)
+                            if score < best:
+                                best = score
+                                valid_vp = cell_loc
             return valid_vp
         
     def how_many_unknown(self):
-        return np.count_nonzero(map == -1)
+        return np.count_nonzero(self.svc.map == -1)
         
     def did_map_change(self):
-        current_unknown = np.count_nonzero(map == -1)
+        current_unknown = np.count_nonzero(self.svc.map == -1)
         is_True = False
         if current_unknown < self.unknown_cells-10:
             is_True = True
@@ -167,26 +169,23 @@ class OnlinePlanner:
                 self.search_dist = 30
 
         map = self.svc.map
-        if np.count_nonzero(map == -1) < (map.shape[0]*map.shape[1])*0.02:
+        if self.how_many_unknown() < (map.shape[0]*map.shape[1])*0.02:
             print(' has been 98 percent explored!')
             raise AssertionError("Map sufficiently explored! :)")
         
         cell_pos = self.svc.position_to_map(self.current_pose[:2])
         distance_pixel = int(self.svc.distance / self.svc.resolution)+1
         check_dist = int(distance_pixel*1.25)
-        min_travel_dist = distance_pixel
+        min_travel_dist = distance_pixel*2
         valid_vp = np.array([None])
         while valid_vp[0] == None:
             explore = frontier(map, cell_pos, self.vpDist_w, self.fSize_w, search_center=self.search_center, search_distance=self.search_dist)
             vp, best_group, frontiers = explore.choose_vp(travel_dist=min_travel_dist)
-            if len(best_group) < 1:
-                if self.segmented_search:
-                    k = 0
-                rospy.logerr('Nothing left to explore, frontiers are all too small')
-                self.goal = None
-                return
-            valid_vp = self.closest_valid_point(cell_pos, vp, check_dist)  
-            min_travel_dist += int(distance_pixel*0.25) 
+            if vp[0] == np.inf:
+                rospy.logerr('done?')
+                continue
+            valid_vp = self.closest_valid_point(cell_pos, vp, check_dist, min_travel_dist)  
+            check_dist += int(distance_pixel*0.25) 
         # self.svc.map_viz_debug(map,'get_viewpoint', cell_pos, valid_vp)
         self.goal = np.array(self.svc.map_to_position(valid_vp))
 
@@ -228,6 +227,7 @@ class OnlinePlanner:
     def explore(self, event):
         while not self.map_loaded and not rospy.is_shutdown():
             rospy.loginfo_throttle(1.0,"[planner] Waiting for map to become ready...")
+        self.path = []
         self.get_viewpoint()
         self.plan()
 
@@ -247,11 +247,12 @@ class OnlinePlanner:
             try:
                 if self.svc.is_valid_pixel(self.svc.position_to_map(goal)) == False:
                     print("Goal is in collision")
+                    self.path = []
                     self.get_viewpoint()
                     attempts -= 1
                     continue
                 self.publish_path_dwa(np.array([self.goal]))
-                self.path = compute_path_global(start_p=self.current_pose[0:2], goal_p=goal, state_validity_checker=self.svc, dominion=self.dominion, max_iterations=10000)
+                self.path = compute_path_global(start_p=self.current_pose[0:2], goal_p=goal, state_validity_checker=self.svc, dominion=self.dominion, max_iterations=5000)
 
                 if not self.path:
                     raise AssertionError("Empty Path")
@@ -288,7 +289,9 @@ class OnlinePlanner:
             #    
         
         if self.replan:
+            self.path = []
             self.get_viewpoint()
+
             self.replan = False 
 
     # PUBLISHER HELPERS
@@ -307,6 +310,8 @@ class OnlinePlanner:
                 pose.pose.position.x = point[0]
                 pose.pose.position.y = point[1]
                 path_msg.poses.append(pose)
+            rospy.loginfo(f'pub path: {len(path_msg.poses)}')
+
 
         self.path_pub.publish(path_msg)
 

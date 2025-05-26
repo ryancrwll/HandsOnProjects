@@ -66,19 +66,19 @@ class frontier:
         for frontier in frontiers:
             if frontier not in self.visited:
                 group = self.breadth_first_search(frontier, frontiers)
-                if len(group) > 2:
+                if len(group) > 4:
                     grouped_f.append(group)
         return grouped_f, frontiers
     
-    def choose_vp(self, travel_dist, ):
+    def choose_vp(self, travel_dist):
         grouped_f, frontiers = self.group_frontiers()
-
+        print(f'number of frontier groups: {len(grouped_f)}')
         group_dist = []
         group_size = []
         ideal_vps = []
         groups = []
         if len(grouped_f) < 1:
-            return None, np.array([]), np.array([])
+            return np.array([np.inf,np.inf]), np.array([]), np.array([])
         for group in grouped_f:
             group_size.append(len(group))
             closest = np.inf
@@ -89,12 +89,13 @@ class frontier:
                     closest = dist
                     good_vp = vp
                     good_group = group
-
             if good_vp is None:
                 continue
             groups.append(good_group)
             ideal_vps.append(good_vp)
             group_dist.append(closest)
+            if not group_dist:
+                return np.array([np.inf,np.inf]), np.array([]), np.array([])
         
         highscore = -np.inf
         best_vp = None

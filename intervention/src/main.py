@@ -59,8 +59,8 @@ class MainIntervention:
         # Publishes the wheel velocities in JointState format.
         # Acts like speedometer to display speed and	tells us what we're doing
         self.J_wheel_velocity = rospy.Publisher("/velocities", JointState, queue_size=10)      
-        # Another way to control the robot using velocity commands (Twist messages)
-        #self.cmd_vel_pub = rospy.Publisher("/turtlebot/kobuki/commands/velocity", Twist, queue_size=10)
+        # Publishes error
+        self.error_pub = rospy.Publisher("/ee_error", Float64MultiArray, queue_size=10)
 
         # Subscribers
         self.weight_sub = rospy.Subscriber('/weight_set', Float64MultiArray, self.weight_service)  
@@ -227,6 +227,10 @@ class MainIntervention:
             self.tasks[i].update(self.robot) # The current robot state — compute Jacobian and error.
             if self.tasks[i].bool_is_Active(): # Only solve the task if it's active
                 err = self.tasks[i].getError() # err: how far you are from the goal times a gain
+                if self.tasks[i].name == "End-Effector Position":
+                    msg = Float64MultiArray()
+                    msg.data = [float(np.linalg.norm(err))]
+                    self.error_pub.publish(msg)
                 gain = 0.8 * np.identity(len(err))
                 err = gain @ err
                 J = self.tasks[i].getJacobian() # J: how changes in joints + base affect the task

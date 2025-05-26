@@ -144,7 +144,7 @@ class StateValidityChecker:
             if reply == False: return False
         return True
         
-    def is_valid_pixel (self, pixel, added_pixel_assurance = 1, free_space_goal = False, plot = False):
+    def is_valid_pixel (self, pixel, added_pixel_assurance = 1, free_space_goal = True, plot = False):
 
         # y is row, x is column
         if free_space_goal:
@@ -174,14 +174,14 @@ class StateValidityChecker:
         return True
     
     def check_path(self, path):
-        if len(path) < 2:
-            # path is just two locations already checked by RRT
-            return True
+        if not self.is_valid_pixel(self.position_to_map(path[-1])):
+                return False
         # for use without dwa
         for i in range(len(path)-1):
             if not self.collision_free(self.position_to_map(path[i]), self.position_to_map(path[i+1])):
                 print ("Collision between ", path[i], path[i+1])
                 return False
+
         # for dwa just care about the way points
         # for i in range(len(path)-1):
         #     if not self.is_valid_pixel(self.position_to_map(path[i])):
@@ -367,23 +367,3 @@ def compute_path_global(start_p, goal_p, state_validity_checker, dominion, max_i
         path[i] = [new[0], new[1]]
     
     return path[1:] #remove first location because the robot is already at first position
-
-# Controller: Given the current position and the goal position, this function computes the desired 
-# lineal velocity and angular velocity to be applied in order to reah the goal.
-def move_to_point(current, current_yaw, goal, Kv=0.5, Kw=0.5):
-    
-    # Use a proportional controller which sets a velocity command to move from current position to goal (u = Ke)
-    # To avoid strange curves, first correct the orientation and then the distance. 
-    # Hint: use wrap_angle function to maintain yaw in [-pi, pi]
-    # This function should return only  linear velocity (v) and angular velocity (w)
-
-    angle_error = current_yaw - m.atan2( goal[1]- current[1],  goal[0]-current[0]) 
-    angle_error = wrap_angle(angle_error)
-    if abs(angle_error) > 0.04 :# anglular error is greater than anglular threshold 0.0873 rad = no idea deg app 5/2
-        w = angle_error * Kw
-        v = 0
-    else:
-        w = angle_error * Kw
-        v = Kv * dist_between_points(current,goal)
-    
-    return  v, w

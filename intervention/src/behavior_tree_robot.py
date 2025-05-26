@@ -658,7 +658,7 @@ class MoveToHome(py_trees.behaviour.Behaviour):
             response = self.set_goal(self.home_position)
             time.sleep(0.5)
             # Set to standard tasks of jointlimits and ee_pose
-            response = self.set_task([0])
+            response = self.set_task([1])
             rospy.loginfo("Home position goal set successfully")
             self.goal_xy = [self.home_position[0]-1, self.home_position[1]]
             rospy.loginfo(f'Goal_position: {self.goal_xy}')
