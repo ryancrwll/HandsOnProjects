@@ -1,0 +1,12 @@
+<launch>
+
+    <!-- <include file="$(find turtlebot_simulation)/launch/turtlebot_hoi.launch" />   -->
+    <!-- <node name="x1" pkg="hands_on_intervention_t" type="deadReckonening.py" output="screen"/>   -->
+    <node name="x2" pkg="hands_on_intervention_t" type="main_services_t.py" output="screen"/> 
+    <node name="x3" pkg="hands_on_intervention_t" type="main_t.py" output="screen"/> 
+    <node name="x4" pkg="hands_on_intervention_t" type="aruco_position_t.py" output="screen"/>
+    <node name="x5" pkg="hands_on_intervention_t" type="behavior_tree_robot_t.py" output="screen"/>
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_odom_to_world" args="3.0 -0.78 0 0 0 0.7071 0.7071 world_ned odom" />
+
+</launch> 

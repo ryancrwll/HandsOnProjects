@@ -8,7 +8,7 @@ from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 import tf.transformations as tf 
 from tf.transformations import*
-from define import *
+from define_t import *
 
 # “The controller node that takes a target pose, uses math to compute how to move, 
 # and tells the robot exactly what to do — in real-time.”
@@ -27,7 +27,7 @@ from define import *
 # Then it sends the velocity commands to the robot in real time, making the 
 # arm and base work together to reach the goal.
 
-class MainIntervention:    
+class Mainintervention_t:    
     def __init__(self): 
         self.wheel_base_distance = 0.23 
         self.wheel_radius =  0.035  
@@ -38,7 +38,7 @@ class MainIntervention:
         self.max_a = self.max - 0.01 
         self.min = -0.5  
         self.min_a = self.min + 0.01 
-        self.goal = None
+        self.goal = None 
         self.weight = (1,1,1,1,1,1)
         self.goal = np.zeros(4)
         self.tasks = [
@@ -72,14 +72,14 @@ class MainIntervention:
         # Publishes error
         self.error_pub = rospy.Publisher("/ee_error", Float64MultiArray, queue_size=10)
 
-        ############## Subscribers ###################
+        ############# Subscribers #################
         self.weight_sub = rospy.Subscriber('/weight_set', Float64MultiArray, self.weight_service)  
         self.goal_sub = rospy.Subscriber('/goal_set', Float64MultiArray, self.goal_service)  
         self.task_sub = rospy.Subscriber('/task_set', Int32, self.task_service)   
         self.joints_sub = rospy.Subscriber('/turtlebot/joint_states', JointState, self.JointState_callback)   
-        # /odom_ground_truth gives the real-time position and rotation of the robot base, 
+        # /odom gives the real-time position and rotation of the robot base, 
         # so the controller knows where it is and can plan where to go.
-        self.odom_sub = rospy.Subscriber("/turtlebot/kobuki/odom_ground_truth", Odometry, self.odom_callback)
+        self.odom_sub = rospy.Subscriber("/turtlebot/kobuki/odom", Odometry, self.odom_callback)
 
     def task_service(self, task_index):
         # This function lets the robot select which control tasks to activate, 
@@ -115,7 +115,7 @@ class MainIntervention:
                 # Here, only Joint 1 and Joint 2 are protected with joint limit tasks because they’re the most likely 
                 # to exceed safe limits during motion. Joint 3 is not as critical, so we skip it for simplicity. 
                 # But we could easily add a Jointlimits3D for Joint 3 if needed for safety or completeness.
-                JointPosition3D("3rd Joint Position", np.array([self.goal[4]]), 3)
+                JointPosition3D("3rd Joint Position", np.array([self.goal[4]-np.pi/2]), 3)
             ]
         else:
             tasks = [
@@ -124,7 +124,7 @@ class MainIntervention:
                 # Here, only Joint 1 and Joint 2 are protected with joint limit tasks because they’re the most likely 
                 # to exceed safe limits during motion. Joint 3 is not as critical, so we skip it for simplicity. 
                 # But we could easily add a Jointlimits3D for Joint 3 if needed for safety or completeness.
-                JointPosition3D("3rd Joint Position", np.array([-np.pi/2]), 3),
+                JointPosition3D("3rd Joint Position", np.array([0.0]), 3),
                 JointPosition3D("4th Joint Position", np.array([0.0]), 4),
                 JointPosition3D("5th Joint Position", np.array([0.0]), 5),
                 JointPosition3D("6th Joint Position", np.array([0.0]), 6)
@@ -147,7 +147,7 @@ class MainIntervention:
     def odom_callback(self, odom_msg): 
         # reads the robot’s current base position and orientation so the controller knows where it is.
         
-        # The odom_callback() function reads the robot's current position (x, y) and rotation (yaw) from the /odom_ground_truth topic, 
+        # The odom_callback() function reads the robot's current position (x, y) and rotation (yaw) from the /odom topic, 
         # converts the orientation from quaternion to a usable yaw angle, and stores the full base pose in self.state. 
         # This pose is essential for computing transformations and controlling the robot accurately 
         # in world coordinates.
@@ -171,18 +171,11 @@ class MainIntervention:
         # commands and base commands. It sends joint velocities to the SwiftPro arm. Then it converts 
         # base linear/angular velocity into left/right wheel speeds, and publishes both to 
         # make the robot move. It also sends the wheel speeds as a status message so other 
-        # # parts of the system can use them.
-        # rospy.loginfo_throttle(3.0, f'goal: {self.goal}')
-        # rospy.loginfo_throttle(3.0, f'weight: {self.weight}')
-
-        # These are joint velocities of the SwiftPro arm.
-        joint_vel_msg = Float64MultiArray()
-        # Index 2 - 5, The 4 joint velocity of the robot.
-        joint_vel_msg.data = [float(q[2, 0]), float(q[3, 0]), float(q[4, 0]), float(q[5, 0])] 
-        self.joint_velocity.publish(joint_vel_msg) # This makes the arm start moving based on task output.
+        # parts of the system can use them.
 
         w = q[0, 0]  # Angular velocity
         v = q[1, 0]  # Linear velocity
+        '''
         # These are the actual motor speeds needed to make the robot move as desired.
         v_r = (2 * v + w * self.wheel_base_distance) / (2 * self.wheel_radius) # Speed for right wheel
         v_l = (2 * v - w * self.wheel_base_distance) / (2 * self.wheel_radius) # Speed for left wheel
@@ -205,7 +198,7 @@ class MainIntervention:
         cmd.linear.x = float(v)
         cmd.angular.z = float(w)
         self.cmd_vel_pub.publish(cmd)
-        '''
+        
 
     def JointState_callback(self, msg):
         # This is a ROS subscriber callback. It gets triggered whenever the robot publishes a new 
@@ -232,10 +225,6 @@ class MainIntervention:
         # It starts with zero motion, then adds motion for each task in priority order using 
         # Jacobians and the WDLS solver, applies speed limits, sends out the commands, 
         # and updates the robot's state.
-        # rospy.loginfo_throttle(2, f'goal: {self.goal}')
-        # rospy.loginfo_throttle(2, f'weights: {self.weight}')
-        
-        
         dt = self.dt
         P = np.eye(self.robot.getDOF()) # P is the null-space projection matrix
         dq = np.zeros((self.robot.getDOF(), 1)) # dq is the joint + base velocity vector we're going to compute.
@@ -245,6 +234,7 @@ class MainIntervention:
             self.tasks[i].update(self.robot) # The current robot state — compute Jacobian and error.
             if self.tasks[i].bool_is_Active(): # Only solve the task if it's active
                 err = self.tasks[i].getError() # err: how far you are from the goal times a gain
+                J = self.tasks[i].getJacobian() # J: how changes in joints + base affect the task
                 if self.tasks[i].name == "First Joint":
                     gain = 1.0 * np.identity(len(err))
                     err = gain @ err
@@ -255,10 +245,9 @@ class MainIntervention:
                     msg = Float64MultiArray()
                     msg.data = [float(np.linalg.norm(err))]
                     self.error_pub.publish(msg)
-                    gain = 1.0 * np.identity(len(err))
+                    gain = 0.8 * np.identity(len(err))
                     err = gain @ err
                     J = self.tasks[i].getJacobian() # J: how changes in joints + base affect the task
-
                 elif self.tasks[i].name == "3rd Joint Position":
                     J = np.array([0,0,1,0,0,0]).reshape(1,6)
                     gain = 0.7 * np.identity(len(err))
@@ -275,11 +264,10 @@ class MainIntervention:
                     scale_factor = self.vmax/largest_dq
                 dq = dq*scale_factor
                 dq = dq.reshape(6, 1)
-
         self.send_velocity(dq)
-        
-        # finds where joints are assuming they started at zeros
         dt = rospy.Time.now().to_sec() - self.last_control_time
+        self.time += dt
+        self.time_vals.append(self.time)
         self.last_control_time = rospy.Time.now().to_sec()
         pose_ee = pose_EE(self.robot.getEETransform())
         self.pose_EE_pub.publish(pose_ee) # This publishes the current end-effector pose to RViz or logs.
@@ -288,7 +276,7 @@ class MainIntervention:
 if __name__ == '__main__': 
     try:
         rospy.init_node('main_node', anonymous=True)  
-        MainIntervention()
+        Mainintervention_t()
         rospy.spin() 
     except rospy.ROSInterruptException:
         pass

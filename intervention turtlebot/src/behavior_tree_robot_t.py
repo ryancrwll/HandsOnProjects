@@ -34,7 +34,7 @@ class MoveRobotToPick(py_trees.behaviour.Behaviour):
         # Subscribe to the position of Aruco markers
         self.image_sub = rospy.Subscriber("/aruco_position", Float64MultiArray, self.aruco_position_callback)
         # Subscribe to the odometry information
-        self.sub_odom = rospy.Subscriber("/turtlebot/kobuki/odom_ground_truth", Odometry, self.odom_callback)
+        self.sub_odom = rospy.Subscriber("/turtlebot/kobuki/odom", Odometry, self.odom_callback)
         # Subscriber for joint angles
         self.joints_sub = rospy.Subscriber('/turtlebot/joint_states', JointState, self.JointState_callback)
         # Dimensions of box to pick (width, depth, height)
@@ -210,7 +210,7 @@ class MoveRobotToPlace(py_trees.behaviour.Behaviour):
         # Subscribe to joint positions        
         self.joints_sub = rospy.Subscriber('/turtlebot/joint_states', JointState, self.JointState_callback)
         # Subscribe to the odometry information
-        self.sub_odom = rospy.Subscriber("/turtlebot/kobuki/odom_ground_truth", Odometry, self.odom_callback)
+        self.sub_odom = rospy.Subscriber("/turtlebot/kobuki/odom", Odometry, self.odom_callback)
         time.sleep(1)
 
     def setup(self):
@@ -363,7 +363,7 @@ class PickPoints(py_trees.behaviour.Behaviour):
         # Subscribe to the pose of the end-effector
         self.sub_pose_ee = rospy.Subscriber('pose_EE', PoseStamped, self.ee_pose_callback)
         # Subscribe to the odometry information
-        self.sub_odom = rospy.Subscriber("/turtlebot/kobuki/odom_ground_truth", Odometry, self.odom_callback)
+        self.sub_odom = rospy.Subscriber("/turtlebot/kobuki/odom", Odometry, self.odom_callback)
         time.sleep(2)
 
     def setup(self):
@@ -474,7 +474,7 @@ class PlacePoints(py_trees.behaviour.Behaviour):
         # Subscribe to the pose of the end-effector
         self.sub_pose_ee = rospy.Subscriber('pose_EE', PoseStamped, self.ee_pose_callback)
         # Subscribe to the odometry information
-        self.sub_odom = rospy.Subscriber("/turtlebot/kobuki/odom_ground_truth", Odometry, self.odom_callback)
+        self.sub_odom = rospy.Subscriber("/turtlebot/kobuki/odom", Odometry, self.odom_callback)
         time.sleep(2)
 
  
@@ -585,7 +585,7 @@ class MoveToHome(py_trees.behaviour.Behaviour):
         # Subscribe to the pose of the end-effector
         self.sub_pose_ee = rospy.Subscriber('pose_EE', PoseStamped, self.ee_pose_callback)
         # Subscribe to the odometry information
-        self.sub_odom = rospy.Subscriber("/turtlebot/kobuki/odom_ground_truth", Odometry, self.odom_callback)
+        self.sub_odom = rospy.Subscriber("/turtlebot/kobuki/odom", Odometry, self.odom_callback)
         # Subscribe to joint positions
         self.joints_sub = rospy.Subscriber('/turtlebot/joint_states', JointState, self.JointState_callback)
         time.sleep(2)

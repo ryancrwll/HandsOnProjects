@@ -5,13 +5,15 @@ import numpy as np
 import traceback
 import threading
 from sensor_msgs.msg import LaserScan
-from geometry_msgs.msg import PoseStamped, Twist, PoseArray, Point
+from geometry_msgs.msg import PoseStamped, Twist, PoseArray, Point, PointStamped
 from visualization_msgs.msg import Marker, MarkerArray
 from std_msgs.msg import ColorRGBA
 from nav_msgs.msg import OccupancyGrid, Odometry, Path
 from frontier_search_dwa.msg import dwa
 import tf
 from online_planning import StateValidityChecker, dist_between_points
+import tf2_ros
+import tf2_geometry_msgs
 
 def wrap_angle(angle): 
     return (angle + np.pi) % (2 * np.pi) - np.pi
@@ -63,6 +65,9 @@ class DWA:
         self.replan_pub = rospy.Publisher(replan_topic, dwa, queue_size=1)
         # Debug
         self.ob_pub = rospy.Publisher('/dwa_obstacles', MarkerArray, queue_size=1)
+
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
         
         # SUBSCRIBERS
@@ -121,19 +126,47 @@ class DWA:
         self.obstacles = []
         robx, roby, heading = self.current_pose
 
-        try:
-            angle = scan.angle_min
+        # try:
+        #     angle = scan.angle_min
 
+        #     for r in scan.ranges:
+        #         if r < self.max_dist:
+        #             x = (r * np.cos(angle+heading))+robx
+        #             y = (r * np.sin(angle+heading))+roby
+        #             self.obstacles.append((x, y, clearance))
+        #         angle += scan.angle_increment
+        #     self.map_loaded = True
+        #     self.publish_obstacles(self.obstacles)
+        # except Exception as e:
+        #     rospy.logerr(f"Obstacle creation failed: {str(e)}\n{traceback.format_exc()}")
+        #     self.obstacles = []
+
+        try:
+            transform = self.tf_buffer.lookup_transform("world_ned", scan.header.frame_id, scan.header.stamp, rospy.Duration(1.0))
+
+            angle = scan.angle_min
             for r in scan.ranges:
-                if r < self.max_dist:
-                    x = (r * np.cos(angle+heading))+robx
-                    y = (r * np.sin(angle+heading))+roby
-                    self.obstacles.append((x, y, clearance))
+                if 0.25 < r < self.max_dist:
+                    x_local = r * np.cos(angle)
+                    y_local = r * np.sin(angle)
+
+                    ps = PointStamped()
+                    ps.header.frame_id = scan.header.frame_id
+                    ps.header.stamp = scan.header.stamp
+                    ps.point.x = x_local
+                    ps.point.y = y_local
+                    ps.point.z = 0.0
+
+                    global_point = tf2_geometry_msgs.do_transform_point(ps, transform)
+                    self.obstacles.append((global_point.point.x, global_point.point.y, clearance))
+
                 angle += scan.angle_increment
+
             self.map_loaded = True
             self.publish_obstacles(self.obstacles)
+
         except Exception as e:
-            rospy.logerr(f"Obstacle creation failed: {str(e)}\n{traceback.format_exc()}")
+            rospy.logerr(f"Obstacle creation failed: {str(e)}\\n{traceback.format_exc()}")
             self.obstacles = []
 
     def motion_model(self, pose, u, dt=None):#TODO maybe switching x and y poses helps
