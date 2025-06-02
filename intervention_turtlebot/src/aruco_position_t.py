@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import rospy
 import cv2
 from cv_bridge import CvBridge
@@ -21,8 +20,8 @@ class ArucoDetector:
         self.aruco_rviz_marker_pub = rospy.Publisher('/aruco_marker', MarkerArray, queue_size=10)
         
         # Subscriber to receive images from the camera
-        self.aruco_sub = rospy.Subscriber("/turtlebot/kobuki/realsense/color/image_color", Image, self.image_callback)
-        # self.aruco_sub = rospy.Subscriber("/turtlebot/kobuki/realsense/color/image_raw", Image, self.image_callback)
+        # self.aruco_sub = rospy.Subscriber("/turtlebot/kobuki/realsense/color/image_color", Image, self.image_callback)
+        self.aruco_sub = rospy.Subscriber("/turtlebot/kobuki/realsense/color/image_raw", Image, self.image_callback)
         self.camera_info_sub = rospy.Subscriber('/turtlebot/kobuki/realsense/color/camera_info', CameraInfo, self.camera_info_callback)
         self.marker_length = 0.05
         self.detected_order = []
@@ -77,6 +76,7 @@ class ArucoDetector:
         corners, ids, _ = detector.detectMarkers(gray)
 
         if ids is None:
+            print('no id')
             return
 
         for i, marker_id in enumerate(ids.flatten()):
@@ -173,6 +173,7 @@ if __name__ == '__main__':
     try:
         rospy.init_node("aruco_detector")
         ArucoDetector()
+        print("hi")
         rospy.spin()
 
     except rospy.ROSInterruptException:

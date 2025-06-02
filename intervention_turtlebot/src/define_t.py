@@ -116,7 +116,7 @@ def fixed_base_to_link_transform():
     Returns:
     numpy.ndarray: The transformation matrix.
     """
-    angle = -math.pi / 2  # Define the rotation angle
+    angle = np.pi / 2  # Define the rotation angle
     return np.array([
         [np.cos(angle), -np.sin(angle), 0, 0.051],
         [np.sin(angle), np.cos(angle), 0, 0],
@@ -327,7 +327,7 @@ def pose_EE(transform_matrix): # Convert a 4x4 transformation matrix into a ROS 
     quaternion = tf.quaternion_from_matrix(transform_matrix)  # Extract rotation as quaternion
 
     pose_msg = PoseStamped()
-    pose_msg.header.frame_id = "world_ned"  # Set the frame ID
+    pose_msg.header.frame_id = "odom"  # Set the frame ID
     pose_msg.header.stamp = rospy.Time.now()  # Set the timestamp
 
     # Set the position

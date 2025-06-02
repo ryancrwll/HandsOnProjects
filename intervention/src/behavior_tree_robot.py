@@ -32,7 +32,7 @@ class MoveRobotToPick(py_trees.behaviour.Behaviour):
         self.sub_pose_ee = rospy.Subscriber('pose_EE', PoseStamped, self.ee_pose_callback)
         self.pose_flag = False
         # Subscribe to the position of Aruco markers
-        self.image_sub = rospy.Subscriber("/aruco_position", Float64MultiArray, self.aruco_position_callback)
+        self.image_sub = rospy.Subscriber("/aruco_position", PoseStamped, self.aruco_position_callback)
         # Subscribe to the odometry information
         self.sub_odom = rospy.Subscriber("/turtlebot/kobuki/odom_ground_truth", Odometry, self.odom_callback)
         # Subscriber for joint angles
@@ -81,7 +81,7 @@ class MoveRobotToPick(py_trees.behaviour.Behaviour):
         self.isPose = True
 
     def aruco_position_callback(self, aruco_msg):
-        self.aruco_pose = aruco_msg.data
+        self.aruco_pose = aruco_msg.pose.position
         blackboard.aruco = self.aruco_pose
         print('Aruco_position', self.aruco_pose)
 
@@ -206,7 +206,7 @@ class MoveRobotToPlace(py_trees.behaviour.Behaviour):
         # Subscribe to the pose of the end-effector
         self.sub_pose_ee = rospy.Subscriber('pose_EE', PoseStamped, self.ee_pose_callback)
         # Subscribe to the position of Aruco markers
-        self.image_sub = rospy.Subscriber("/aruco_position", Float64MultiArray, self.aruco_position_callback)
+        self.image_sub = rospy.Subscriber("/aruco_position", PoseStamped, self.aruco_position_callback)
         # Subscribe to joint positions        
         self.joints_sub = rospy.Subscriber('/turtlebot/joint_states', JointState, self.JointState_callback)
         # Subscribe to the odometry information
@@ -342,7 +342,7 @@ class MoveRobotToPlace(py_trees.behaviour.Behaviour):
         self.joint1_pos = joint1_pos
 
     def aruco_position_callback(self, aruco_msg):
-        self.aruco_pose = aruco_msg.data
+        self.aruco_pose = aruco_msg.pose.position
         blackboard.aruco = self.aruco_pose
         rospy.loginfo(f'Aruco_position: {self.aruco_pose}')
 

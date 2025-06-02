@@ -32,7 +32,7 @@ class MoveRobotToPick(py_trees.behaviour.Behaviour):
         self.sub_pose_ee = rospy.Subscriber('pose_EE', PoseStamped, self.ee_pose_callback)
         self.pose_flag = False
         # Subscribe to the position of Aruco markers
-        self.image_sub = rospy.Subscriber("/aruco_position", Float64MultiArray, self.aruco_position_callback)
+        self.image_sub = rospy.Subscriber("/aruco_position", PoseStamped, self.aruco_position_callback)
         # Subscribe to the odometry information
         self.sub_odom = rospy.Subscriber("/turtlebot/kobuki/odom", Odometry, self.odom_callback)
         # Subscriber for joint angles
@@ -81,7 +81,7 @@ class MoveRobotToPick(py_trees.behaviour.Behaviour):
         self.isPose = True
 
     def aruco_position_callback(self, aruco_msg):
-        self.aruco_pose = aruco_msg.data
+        self.aruco_pose = [aruco_msg.pose.position.x, aruco_msg.pose.position.y, aruco_msg.pose.position.z]
         blackboard.aruco = self.aruco_pose
         print('Aruco_position', self.aruco_pose)
 
@@ -124,11 +124,11 @@ class MoveRobotToPick(py_trees.behaviour.Behaviour):
             # Set the weight for the arm
             response = self.set_weight(self.weight_arm_pose)
             # Stall to see where the zero angles are for each joint
-            time.sleep(10)
+            time.sleep(3)
             rospy.wait_for_message('/turtlebot/joint_states', JointState, timeout=1.0)
             threshold = np.deg2rad(5)
             # Update the goal position
-            goal_position = [0.0,0.0,0.0,0.0,-np.pi/2]
+            goal_position = [0.0,0.0,0.0,0.0,np.pi/2]
             response = self.set_goal(goal_position)
             self.goal_theta = goal_position[4]
                       
@@ -206,7 +206,7 @@ class MoveRobotToPlace(py_trees.behaviour.Behaviour):
         # Subscribe to the pose of the end-effector
         self.sub_pose_ee = rospy.Subscriber('pose_EE', PoseStamped, self.ee_pose_callback)
         # Subscribe to the position of Aruco markers
-        self.image_sub = rospy.Subscriber("/aruco_position", Float64MultiArray, self.aruco_position_callback)
+        self.image_sub = rospy.Subscriber("/aruco_position", PoseStamped, self.aruco_position_callback)
         # Subscribe to joint positions        
         self.joints_sub = rospy.Subscriber('/turtlebot/joint_states', JointState, self.JointState_callback)
         # Subscribe to the odometry information
@@ -342,7 +342,7 @@ class MoveRobotToPlace(py_trees.behaviour.Behaviour):
         self.joint1_pos = joint1_pos
 
     def aruco_position_callback(self, aruco_msg):
-        self.aruco_pose = aruco_msg.data
+        self.aruco_pose = [aruco_msg.pose.position.x, aruco_msg.pose.position.y, aruco_msg.pose.position.z]
         blackboard.aruco = self.aruco_pose
         rospy.loginfo(f'Aruco_position: {self.aruco_pose}')
 
@@ -634,7 +634,7 @@ class MoveToHome(py_trees.behaviour.Behaviour):
         self.weight_base = [1.0, 1.0, 100000.0, 100000.0, 100000.0, 100000.0]
         self.weight_arm_pose = [np.inf, np.inf, 1.0, 1.0, 1.0, 1.0]
         self.home_position = [0.0, 0.0, 0.0, 0.0, -np.pi/2]
-        self.source_frame = 'world_ned'
+        self.source_frame = 'odom'
         self.logger.debug("  %s [MoveToHome::initialise()]" % self.name)
 
     def update(self):

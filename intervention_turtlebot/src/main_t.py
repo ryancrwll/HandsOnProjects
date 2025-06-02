@@ -4,7 +4,7 @@ import rospy
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64MultiArray,Int32
 from geometry_msgs.msg import PoseStamped 
-#from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 import tf.transformations as tf 
 from tf.transformations import*
@@ -65,7 +65,7 @@ class Mainintervention_t:
         self.joint_velocity = rospy.Publisher("/turtlebot/swiftpro/joint_velocity_controller/command", Float64MultiArray, queue_size=10) 
         # Publishes left and right wheel velocities to move the TurtleBot base.
         # Acts like Steering input and Tells wheels to move
-        self.wheel_velocity = rospy.Publisher("/turtlebot/kobuki/commands/wheel_velocities", Float64MultiArray, queue_size=10)     
+        self.wheel_velocity = rospy.Publisher("/turtlebot/kobuki/commands/velocity", Twist, queue_size=10)     
         # Publishes the wheel velocities in JointState format.
         # Acts like speedometer to display speed and	tells us what we're doing
         self.J_wheel_velocity = rospy.Publisher("/velocities", JointState, queue_size=10)      
@@ -104,7 +104,7 @@ class Mainintervention_t:
                 # Here, only Joint 1 and Joint 2 are protected with joint limit tasks because they’re the most likely 
                 # to exceed safe limits during motion. Joint 3 is not as critical, so we skip it for simplicity. 
                 # But we could easily add a Jointlimits3D for Joint 3 if needed for safety or completeness.
-                JointPosition3D("3rd Joint Position", np.array([self.goal[4]-np.pi/2]), 3),
+                JointPosition3D("3rd Joint Position", np.array([self.goal[4]]), 3),
                 Position3D("End-Effector Position", np.array(self.goal[0:3]).reshape(3,1), 6)
             ]
         elif self.selected_task == 2:
@@ -115,7 +115,7 @@ class Mainintervention_t:
                 # Here, only Joint 1 and Joint 2 are protected with joint limit tasks because they’re the most likely 
                 # to exceed safe limits during motion. Joint 3 is not as critical, so we skip it for simplicity. 
                 # But we could easily add a Jointlimits3D for Joint 3 if needed for safety or completeness.
-                JointPosition3D("3rd Joint Position", np.array([self.goal[4]-np.pi/2]), 3)
+                JointPosition3D("3rd Joint Position", np.array([self.goal[4]]), 3)
             ]
         else:
             tasks = [
@@ -175,29 +175,17 @@ class Mainintervention_t:
 
         w = q[0, 0]  # Angular velocity
         v = q[1, 0]  # Linear velocity
-        '''
-        # These are the actual motor speeds needed to make the robot move as desired.
-        v_r = (2 * v + w * self.wheel_base_distance) / (2 * self.wheel_radius) # Speed for right wheel
-        v_l = (2 * v - w * self.wheel_base_distance) / (2 * self.wheel_radius) # Speed for left wheel
+        
+        # These are joint velocities of the SwiftPro arm.
+        joint_vel_msg = Float64MultiArray()
+        # Index 2 - 5, The 4 joint velocity of the robot.
+        joint_vel_msg.data = [float(q[2, 0]), float(q[3, 0]), float(q[4, 0]), float(q[5, 0])] 
+        self.joint_velocity.publish(joint_vel_msg) # This makes the arm start moving based on task output.
 
-        # Controls wheel motion
-        # This is what moves the TurtleBot base forward, backward, or makes it turn.
-        wheel_vel_msg = Float64MultiArray()
-        wheel_vel_msg.data = [float(v_r), float(v_l)]
-        self.wheel_velocity.publish(wheel_vel_msg)
-
-        # Shares wheel speeds with other nodes
-        # This does not control anything, but simply broadcasts the same wheel 
-        # speeds as a JointState message.
-        joint_state_msg = JointState()
-        joint_state_msg.header.stamp = rospy.Time.now()
-        joint_state_msg.velocity = [float(v_r), float(v_l)]
-        self.J_wheel_velocity.publish(joint_state_msg)
-        '''
         cmd = Twist()
         cmd.linear.x = float(v)
         cmd.angular.z = float(w)
-        self.cmd_vel_pub.publish(cmd)
+        self.wheel_velocity.publish(cmd)
         
 
     def JointState_callback(self, msg):
